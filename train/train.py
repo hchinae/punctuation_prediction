@@ -17,6 +17,7 @@ from model.baseline_bilstm import BiLSTMPunctuator
 from preprocessing.preprocess_data import get_punctuation_signs_for_prediction
 from train.dataset import PunctuationDataset, collate_fn
 
+class_labels = get_punctuation_signs_for_prediction()
 
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -52,7 +53,7 @@ def train():
     with open(VOCAB_PATH, "r") as f:
         vocab = json.load(f)
     vocab_size = len(vocab)
-    num_classes = len(get_punctuation_signs_for_prediction())
+    num_classes = len(class_labels)
 
     all_files = glob(os.path.join(TRAIN_DIR, "*.txt"))
     assert len(all_files) >= 2, "Need at least two files for train/validation split"
@@ -60,6 +61,8 @@ def train():
     train_files, val_files = train_test_split(all_files, test_size=1, random_state=SEED)
 
     print(f"Train files: {len(train_files)}, Val files: {len(val_files)}")
+    #print the name of the val file
+    print(f"Validation files: {val_files}")
 
     train_dataset = PunctuationDataset(train_files)
     val_dataset = PunctuationDataset(val_files)
@@ -112,11 +115,15 @@ def train():
         val_f1 = evaluate(model, val_loader, device)
 
         print(f"Epoch {epoch:02d} | Train Loss: {avg_train_loss:.4f} | Train F1: {train_f1:.4f} | Val F1: {val_f1:.4f}")
+        
+
 
         if val_f1 > best_val_f1:
             best_val_f1 = val_f1
             torch.save(model.state_dict(), MODEL_SAVE_PATH)
             print(f"Saved new best model to {MODEL_SAVE_PATH}")
+            evaluate(model, val_loader, device, class_labels=class_labels, plot=True, plot_dir="report")
+
 
     print(f"Training complete. Best validation F1: {best_val_f1:.4f}")
 
