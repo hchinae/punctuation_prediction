@@ -5,11 +5,16 @@ import torch
 from torch.utils.data import Dataset
 
 from config import MAX_SEQ_LEN, PADDING_IDX, UNK_IDX, VOCAB_PATH
-from preprocessing.preprocess_data import (get_punctuation_marker,
-                                           preprocess_file)
+from preprocessing.preprocess_data import (
+    get_punctuation_marker, get_punctuation_signs_for_prediction,
+    preprocess_file)
 
 
 class PunctuationDataset(Dataset):
+    """
+    Dataset that loads tokenized input and punctuation labels from .txt files
+    preprocessed using the provided `preprocess_file()` function.
+    """
     def __init__(self, filepaths):
         self.samples = []
         self.marker = get_punctuation_marker()
@@ -20,7 +25,7 @@ class PunctuationDataset(Dataset):
         self.word2idx = self.vocab
         self.idx2word = {v: k for k, v in self.vocab.items()}
 
-        # Load data
+        # Load all input-label pairs
         for path in filepaths:
             inputs, labels = preprocess_file(path)
             for x, y in zip(inputs, labels):
@@ -34,18 +39,19 @@ class PunctuationDataset(Dataset):
         return tokens, puncts
 
 
-def collate_fn(batch):
+def collate_fn(batch, vocab):
     """
-    Pads sequences to MAX_SEQ_LEN. Applies mask for <punctuation> positions.
-    Returns:
-      input_ids: [B, L]
-      target_labels: [B, num_markers]
-      mask: [B, L] (True only where <punctuation>)
-    """
-    from preprocess_data import (get_punctuation_marker,
-                                 get_punctuation_signs_for_prediction)
+    Custom collate function for padding, input ID conversion, and <punctuation> masking.
 
-    from config import MAX_SEQ_LEN
+    Args:
+        batch: list of (tokens, labels)
+        vocab: dict mapping token → index
+
+    Returns:
+        input_ids: [B, L] tensor
+        target_labels: List[List[int]] — one list per sample, len = #<punctuation> markers
+        mask: [B, L] tensor (bool) — True at <punctuation> tokens
+    """
     marker = get_punctuation_marker()
     punct2idx = {p: i for i, p in enumerate(get_punctuation_signs_for_prediction())}
 
@@ -69,7 +75,7 @@ def collate_fn(batch):
                 input_ids.append(vocab.get(tok, UNK_IDX))
                 mask.append(0)
 
-        # Pad
+        # Padding if needed
         pad_len = MAX_SEQ_LEN - len(input_ids)
         input_ids += [PADDING_IDX] * pad_len
         mask += [0] * pad_len

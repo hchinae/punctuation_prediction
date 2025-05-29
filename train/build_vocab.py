@@ -2,7 +2,7 @@ import json
 import os
 from collections import Counter
 
-from config import MIN_FREQ, VOCAB_PATH
+from config import MIN_FREQ, TRAIN_DIR, VOCAB_PATH
 from preprocessing.preprocess_data import preprocess_file
 
 SPECIAL_TOKENS = ["<pad>", "<unk>"]
@@ -29,3 +29,6 @@ def build_vocab_from_dir(train_dir):
 
     print(f"Saved vocab with {len(vocab)} tokens to {VOCAB_PATH}")
     return vocab
+
+if __name__ == "__main__":
+    build_vocab_from_dir(TRAIN_DIR)
