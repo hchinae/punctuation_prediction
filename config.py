@@ -16,6 +16,11 @@ MIN_FREQ = 2  # min frequency for vocab
 PADDING_IDX = 0
 UNK_IDX = 1
 
+# Device
+import torch
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Files
 TRAIN_DIR = "data/train/"
 VOCAB_PATH = "data/vocab.json"

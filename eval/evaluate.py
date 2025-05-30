@@ -68,6 +68,10 @@ def plot_classification_report(logits, targets, mask, class_labels, save_dir=Non
     report = classification_report(labels, preds, target_names=class_labels, output_dict=True, zero_division=0)
     f1_scores = [report[cls]['f1-score'] for cls in class_labels]
 
+    #print for each cls what is the f1 score
+    for cls, f1 in zip(class_labels, f1_scores):
+        print(f"F1 score for {cls}: {f1:.4f}")
+        
     plt.figure(figsize=(10, 4))
     plt.bar(class_labels, f1_scores, color='skyblue')
     plt.title("Per-class F1 scores")

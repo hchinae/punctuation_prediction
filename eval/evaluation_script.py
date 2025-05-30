@@ -1,8 +1,10 @@
-import numpy
 import random
 
-from preprocess_data import (get_punctuation_signs_for_tokenization, get_punctuation_marker,
-                             preprocess_file, get_punctuation_signs_for_prediction)
+import numpy
+
+from preprocessing.preprocess_data import (
+    get_punctuation_marker, get_punctuation_signs_for_prediction,
+    get_punctuation_signs_for_tokenization, preprocess_file)
 
 
 class Model:
