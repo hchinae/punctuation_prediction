@@ -100,7 +100,8 @@ if __name__ == '__main__':
     
     # Load the model
     # START : Modify this section
-    model = RandomModel()
+    from eval.eval_wrapper import LSTMWrapper
+    model = LSTMWrapper()
     # END: do not modify below
     
     # Obtain the model's confusion matrix
