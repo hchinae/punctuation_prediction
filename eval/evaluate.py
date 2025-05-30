@@ -3,8 +3,10 @@ import seaborn as sns
 import torch
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
+from utils.data_utils import get_punctuation_signs_for_prediction
 
-def evaluate(model, data_loader, device, class_labels=None, plot=False, plot_dir=None):
+
+def evaluate_model(model, data_loader, device, class_labels=None, plot=False, plot_dir=None):
     model.eval()
     all_logits = []
     all_targets = []
@@ -49,7 +51,7 @@ def compute_f1(logits, targets, mask):
     if len(labels) == 0:
         return 0.0
 
-    return f1_score(labels, preds, average="macro")
+    return f1_score(labels, preds, average="macro", labels=list(range(len(get_punctuation_signs_for_prediction() ) ) ) )
 
 
 def plot_classification_report(logits, targets, mask, class_labels, save_dir=None):

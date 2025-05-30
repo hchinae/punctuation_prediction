@@ -2,9 +2,10 @@ import random
 
 import numpy
 
-from preprocessing.preprocess_data import (
-    get_punctuation_marker, get_punctuation_signs_for_prediction,
-    get_punctuation_signs_for_tokenization, preprocess_file)
+from utils.preprocess_data import (get_punctuation_marker,
+                                   get_punctuation_signs_for_prediction,
+                                   get_punctuation_signs_for_tokenization,
+                                   preprocess_file)
 
 
 class Model:
@@ -101,8 +102,8 @@ if __name__ == '__main__':
     
     # Load the model
     # START : Modify this section
-    from eval.eval_wrapper import LSTMWrapper
-    model = LSTMWrapper()
+    from eval.model_wrapper import MyModel
+    model = MyModel()
     # END: do not modify below
     
     # Obtain the model's confusion matrix
