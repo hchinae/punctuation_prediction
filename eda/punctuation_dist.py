@@ -36,8 +36,13 @@ def analyze_punctuation_distribution(data_dir):
     plt.ylabel("Frequency")
     plt.title("Punctuation Distribution in Test Set")
     plt.tight_layout()
-    plt.savefig("eda/punctuation_distribution.png")
+    #add prefix to the path of the plot based on the current directory
+    #split data_dir to rename / to _
+    prefix = data_dir.split("/")[-1].replace("_", "-")
+    print(f"Saving plot to eda/{prefix}_punctuation_distribution.png")
+    plt.title(f"Punctuation Distribution in {prefix} Set")
+    plt.savefig(f"eda/{prefix}_punctuation_distribution.png")
     plt.close()
 
 if __name__ == "__main__":
-    analyze_punctuation_distribution("data/test")
+    analyze_punctuation_distribution("data/proxy_test")

@@ -65,17 +65,43 @@ def plot_classification_report(logits, targets, mask, class_labels, save_dir=Non
         preds.extend(pred)
         labels.extend(label)
     
+    # Prepare full label list (all indices)
     all_class_indices = list(range(len(class_labels)))
-    report = classification_report(labels, preds, labels=all_class_indices, target_names=class_labels, output_dict=True, zero_division=0)
-    f1_scores = [report[cls]['f1-score'] for cls in class_labels]
-    missing = set(all_class_indices) - set(set(labels)) - set(set(preds))
+
+    # Get classification report (handles missing labels safely)
+    report = classification_report(
+        labels,
+        preds,
+        labels=all_class_indices,
+        target_names=class_labels,
+        output_dict=True,
+        zero_division=0
+    )
+    
+    # Print macro and weighted average F1
+    macro_f1 = report["macro avg"]["f1-score"]
+    weighted_f1 = report["weighted avg"]["f1-score"]
+    print(f"\nMacro Avg F1: {macro_f1:.4f}")
+    print(f"Weighted Avg F1: {weighted_f1:.4f}")
+        # Print overall F1
+
+    # Build f1_scores with fallback for missing classes
+    f1_scores = []
+    for cls in class_labels:
+        if cls in report:
+            f1_scores.append(report[cls]['f1-score'])
+        else:
+            f1_scores.append(0.0)  # Class missing in both preds and labels
+
+    # Detect missing classes for logging
+    missing = set(all_class_indices) - set(labels) - set(preds)
     if missing:
         print(f"Warning: These classes were missing in both predictions and labels: {missing}")
 
-    #print for each cls what is the f1 score
+    # Print per-class F1
     for cls, f1 in zip(class_labels, f1_scores):
         print(f"F1 score for {cls}: {f1:.4f}")
-        
+
     plt.figure(figsize=(10, 4))
     plt.bar(class_labels, f1_scores, color='skyblue')
     plt.title("Per-class F1 scores")

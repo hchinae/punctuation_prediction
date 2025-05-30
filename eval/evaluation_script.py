@@ -69,7 +69,8 @@ def evaluate_model(model, inputs, labels):
         prediction = model.predict(input)
  
         # Ensure that the predictions are valid
-        assert len(prediction) == len(label), "Invalid number of predictions"
+        assert len(prediction) == len(label), f"Invalid number of predictions  pred: {len(prediction)}, gold: {len(label)} for input: {input}"
+        assert all(isinstance(p, str) for p in prediction), "Model predicted non-string punctuation signs: {}".format(prediction)
         for p in prediction:
             assert p in classes, "Model predicted an invalid punctuation sign: {}".format(p)
             

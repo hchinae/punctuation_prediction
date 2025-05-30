@@ -36,28 +36,49 @@ class LSTMWrapper:
         self.model.eval()
 
     def predict(self, text):
-        """
-        Given a list of tokens (including <punctuation>), return predicted punctuation list.
-        """
         input_ids = []
         marker_positions = []
 
-        for i, token in enumerate(text[:MAX_SEQ_LEN]):
+        # Tokenize + collect marker positions
+        for token in text:
             if token == self.marker:
-                marker_positions.append(i)
+                marker_positions.append(len(input_ids))
                 input_ids.append(self.word2idx.get(self.marker, UNK_IDX))
             else:
                 input_ids.append(self.word2idx.get(token, UNK_IDX))
 
-        # Pad to MAX_SEQ_LEN
-        pad_len = MAX_SEQ_LEN - len(input_ids)
-        input_ids += [PADDING_IDX] * pad_len
+        predictions = []
+        marker_ptr = 0
+        total_tokens = len(input_ids)
 
-        input_tensor = torch.tensor([input_ids], dtype=torch.long).to(DEVICE)
-        with torch.no_grad():
-            logits, _ = self.model(input_tensor)  # [1, L, C]
-            predictions = torch.argmax(logits, dim=-1).squeeze(0)  # [L]
+        # Process in chunks of MAX_SEQ_LEN
+        for start in range(0, total_tokens, MAX_SEQ_LEN):
+            end = start + MAX_SEQ_LEN
+            chunk = input_ids[start:end]
 
-        # Extract predictions at <punctuation> positions only
-        pred_punct = [self.idx2punct[predictions[pos].item()] for pos in marker_positions]
-        return pred_punct
+            # Map markers within this chunk
+            chunk_markers = []
+            for i in range(len(chunk)):
+                if (start + i) in marker_positions:
+                    chunk_markers.append(i)
+
+            if not chunk_markers:
+                continue  # No markers in this chunk, skip
+
+            # Pad if necessary
+            pad_len = MAX_SEQ_LEN - len(chunk)
+            chunk += [PADDING_IDX] * pad_len
+
+            input_tensor = torch.tensor([chunk], dtype=torch.long).to(DEVICE)
+
+            with torch.no_grad():
+                logits, _ = self.model(input_tensor)
+                pred = torch.argmax(logits, dim=-1).squeeze(0)
+
+            for pos in chunk_markers:
+                predictions.append(self.idx2punct[pred[pos].item()])
+
+        assert len(predictions) == text.count(self.marker), (
+            f"Expected {text.count(self.marker)} predictions, got {len(predictions)}"
+        )
+        return predictions

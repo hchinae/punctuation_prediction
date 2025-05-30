@@ -35,8 +35,13 @@ def analyze_sequence_lengths(data_dir):
     plt.ylabel("Count")
     plt.title("Distribution of Tokenized Paragraph Lengths")
     plt.tight_layout()
-    plt.savefig("eda/sequence_lengths.png")
+    #add prefix to the path of the plot based on the current directory
+    #split data_dir to rename / to _
+    prefix = data_dir.split("/")[-1].replace("_", "-")
+    print(f"Saving plot to eda/{prefix}_punctuation_distribution.png")
+    plt.title(f"Sequence Length in {prefix} Set")
+    plt.savefig(f"eda/{prefix}_sequence_lengths.png")
     plt.close()
 
 if __name__ == "__main__":
-    analyze_sequence_lengths("data/test")
+    analyze_sequence_lengths("data/proxy_test")
