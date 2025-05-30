@@ -1,17 +1,15 @@
 import json
-import os
 import random
 from functools import partial
-from glob import glob
 
 import numpy as np
 import torch
-from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
-from config import (BATCH_SIZE, EPOCHS, LEARNING_RATE, MAX_GRAD_NORM,
-                    MODEL_SAVE_PATH, PADDING_IDX, SEED, TRAIN_DIR,
-                    TRAIN_JSON_PATH, UNK_IDX, VAL_JSON_PATH, VOCAB_PATH)
+from config import (BATCH_SIZE, CLASS_WEIGHTS_PATH, EPOCHS, LEARNING_RATE,
+                    MAX_GRAD_NORM, MODEL_SAVE_PATH, PADDING_IDX, SEED,
+                    TRAIN_DIR, TRAIN_JSON_PATH, UNK_IDX, USE_CLASS_WEIGHTS,
+                    VAL_JSON_PATH, VOCAB_PATH)
 from eval.evaluate import evaluate
 from model.baseline_bilstm import BiLSTMPunctuator
 from preprocessing.preprocess_data import get_punctuation_signs_for_prediction
@@ -27,9 +25,8 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
 
 
-def compute_masked_loss(logits, targets, mask):
+def compute_masked_loss(logits, targets, mask, loss_fn):
     B, L, C = logits.shape
-    loss_fn = torch.nn.CrossEntropyLoss()
     losses = []
 
     for i in range(B):
@@ -44,7 +41,6 @@ def compute_masked_loss(logits, targets, mask):
         return torch.tensor(0.0, requires_grad=True).to(logits.device)
     return torch.stack(losses).mean()
 
-
 def train():
     set_seed(SEED)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,17 +51,6 @@ def train():
     vocab_size = len(vocab)
     num_classes = len(class_labels)
 
-    # all_files = glob(os.path.join(TRAIN_DIR, "*.txt"))
-    # assert len(all_files) >= 2, "Need at least two files for train/validation split"
-
-    # train_files, val_files = train_test_split(all_files, test_size=1, random_state=SEED)
-
-    # print(f"Train files: {len(train_files)}, Val files: {len(val_files)}")
-    # #print the name of the val file
-    # print(f"Validation files: {val_files}")
-
-    # train_dataset = PunctuationDataset(train_files)
-    # val_dataset = PunctuationDataset(val_files)
     train_dataset = PunctuationDataset(json_path=TRAIN_JSON_PATH)
     val_dataset = PunctuationDataset(json_path=VAL_JSON_PATH)
 
@@ -93,6 +78,12 @@ def train():
 
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     best_val_f1 = 0.0
+    if USE_CLASS_WEIGHTS:
+        class_weights = np.load(CLASS_WEIGHTS_PATH)
+        class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
+        loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights)
+    else:
+        loss_fn = torch.nn.CrossEntropyLoss()
 
     for epoch in range(1, EPOCHS + 1):
         model.train()
@@ -103,7 +94,7 @@ def train():
             mask = mask.to(device)
 
             logits, _ = model(input_ids)
-            loss = compute_masked_loss(logits, targets, mask)
+            loss = compute_masked_loss(logits, targets, mask, loss_fn)
 
             optimizer.zero_grad()
             loss.backward()
@@ -116,9 +107,7 @@ def train():
         train_f1 = evaluate(model, train_loader, device)
         val_f1 = evaluate(model, val_loader, device)
 
-        print(f"Epoch {epoch:02d} | Train Loss: {avg_train_loss:.4f} | Train F1: {train_f1:.4f} | Val F1: {val_f1:.4f}")
-        
-
+        print(f"\nEpoch {epoch:02d} | Train Loss: {avg_train_loss:.4f} | Train F1: {train_f1:.4f} | Val F1: {val_f1:.4f}")
 
         if val_f1 > best_val_f1:
             best_val_f1 = val_f1
@@ -126,9 +115,7 @@ def train():
             print(f"Saved new best model to {MODEL_SAVE_PATH}")
             evaluate(model, val_loader, device, class_labels=class_labels, plot=True, plot_dir="report")
 
-
     print(f"Training complete. Best validation F1: {best_val_f1:.4f}")
-
 
 if __name__ == "__main__":
     train()

@@ -143,3 +143,4 @@ def plot_confusion_matrix(logits, targets, mask, class_labels, save_dir=None):
         print(f"Saved confusion matrix to {path}")
     else:
         plt.show()
+    plt.close()
