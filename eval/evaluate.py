@@ -64,9 +64,13 @@ def plot_classification_report(logits, targets, mask, class_labels, save_dir=Non
         label = targets[i]
         preds.extend(pred)
         labels.extend(label)
-
-    report = classification_report(labels, preds, target_names=class_labels, output_dict=True, zero_division=0)
+    
+    all_class_indices = list(range(len(class_labels)))
+    report = classification_report(labels, preds, labels=all_class_indices, target_names=class_labels, output_dict=True, zero_division=0)
     f1_scores = [report[cls]['f1-score'] for cls in class_labels]
+    missing = set(all_class_indices) - set(set(labels)) - set(set(preds))
+    if missing:
+        print(f"Warning: These classes were missing in both predictions and labels: {missing}")
 
     #print for each cls what is the f1 score
     for cls, f1 in zip(class_labels, f1_scores):

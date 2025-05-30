@@ -10,8 +10,8 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
 from config import (BATCH_SIZE, EPOCHS, LEARNING_RATE, MAX_GRAD_NORM,
-                    MODEL_SAVE_PATH, PADDING_IDX, SEED, TRAIN_DIR, UNK_IDX,
-                    VOCAB_PATH)
+                    MODEL_SAVE_PATH, PADDING_IDX, SEED, TRAIN_DIR,
+                    TRAIN_JSON_PATH, UNK_IDX, VAL_JSON_PATH, VOCAB_PATH)
 from eval.evaluate import evaluate
 from model.baseline_bilstm import BiLSTMPunctuator
 from preprocessing.preprocess_data import get_punctuation_signs_for_prediction
@@ -55,17 +55,19 @@ def train():
     vocab_size = len(vocab)
     num_classes = len(class_labels)
 
-    all_files = glob(os.path.join(TRAIN_DIR, "*.txt"))
-    assert len(all_files) >= 2, "Need at least two files for train/validation split"
+    # all_files = glob(os.path.join(TRAIN_DIR, "*.txt"))
+    # assert len(all_files) >= 2, "Need at least two files for train/validation split"
 
-    train_files, val_files = train_test_split(all_files, test_size=1, random_state=SEED)
+    # train_files, val_files = train_test_split(all_files, test_size=1, random_state=SEED)
 
-    print(f"Train files: {len(train_files)}, Val files: {len(val_files)}")
-    #print the name of the val file
-    print(f"Validation files: {val_files}")
+    # print(f"Train files: {len(train_files)}, Val files: {len(val_files)}")
+    # #print the name of the val file
+    # print(f"Validation files: {val_files}")
 
-    train_dataset = PunctuationDataset(train_files)
-    val_dataset = PunctuationDataset(val_files)
+    # train_dataset = PunctuationDataset(train_files)
+    # val_dataset = PunctuationDataset(val_files)
+    train_dataset = PunctuationDataset(json_path=TRAIN_JSON_PATH)
+    val_dataset = PunctuationDataset(json_path=VAL_JSON_PATH)
 
     train_loader = DataLoader(
         train_dataset,

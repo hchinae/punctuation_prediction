@@ -24,7 +24,10 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Files
 TRAIN_DIR = "data/train/"
 VOCAB_PATH = "data/vocab.json"
+TRAIN_JSON_PATH = "data/processed/train.json"
+VAL_JSON_PATH = "data/processed/val.json"
 MODEL_SAVE_PATH = "checkpoints/best_model.pt"
+VAL_RATIO = 0.1
 
 # Others
 SEED = 42

@@ -15,7 +15,7 @@ class PunctuationDataset(Dataset):
     Dataset that loads tokenized input and punctuation labels from .txt files
     preprocessed using the provided `preprocess_file()` function.
     """
-    def __init__(self, filepaths):
+    def __init__(self, filepaths=None, json_path=None):
         self.samples = []
         self.marker = get_punctuation_marker()
 
@@ -25,11 +25,16 @@ class PunctuationDataset(Dataset):
         self.word2idx = self.vocab
         self.idx2word = {v: k for k, v in self.vocab.items()}
 
-        # Load all input-label pairs
-        for path in filepaths:
-            inputs, labels = preprocess_file(path)
-            for x, y in zip(inputs, labels):
-                self.samples.append((x, y))
+        if json_path:
+            with open(json_path, "r") as f:
+                self.samples = json.load(f)
+        
+        # Load all input-label pairs if provided
+        if filepaths:
+            for path in filepaths:
+                inputs, labels = preprocess_file(path)
+                for x, y in zip(inputs, labels):
+                    self.samples.append((x, y))
 
     def __len__(self):
         return len(self.samples)
