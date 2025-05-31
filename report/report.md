@@ -42,7 +42,7 @@ Before model development, we performed an extensive exploratory data analysis to
 
 ### Punctuation Frequencies in Test Set
 
-![Alt text](test/test_eda_punctuation_distribution.png)
+<img src="test/test_eda_punctuation_distribution.png" alt="Test Data Punctuation Distribution" width="400"/>
 
 | Punctuation | Count |
 |-------------|-------|
