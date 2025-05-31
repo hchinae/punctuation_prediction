@@ -44,6 +44,12 @@ Before model development, we performed an extensive exploratory data analysis to
 
 <img src="test/test_eda_punctuation_distribution.png" alt="Test Data Punctuation Distribution" width="400"/>
 
+<p float="left">
+  <img src="test/test_eda_punctuation_distribution.png" width="500"/>
+  <img src="test/test_eda_sequence_length_distribution.png" width="500"/>
+</p>
+
+
 | Punctuation | Count |
 |-------------|-------|
 | ,           | 1879  |
