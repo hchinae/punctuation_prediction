@@ -117,7 +117,7 @@ We evaluate our model on both validation (from train split), and the official te
 
 The per class f1 on test set are shown here:
 
-<img src="test/per_class_f1.png" width="500"/>
+<img src="test/per_class_f1.png" width="700"/>
 
 The test set f1 scores are:
 Test Set
@@ -130,7 +130,7 @@ These results indicate a solid baseline, but highlight the challenge of rare cla
 
 To investigate the results further, we show the test set confusion matrix here:
 
-<img src="test/confusion_matrix.png" width="500"/>
+<img src="test/confusion_matrix.png" width="600"/>
 
 The model performs well on frequent punctuation marks such as ", ., and ,. However, performance drops significantly for rare punctuation classes like :, ;, (, and ). Common confusions include ":" and "." as well as ";" and ",".
 
@@ -144,11 +144,11 @@ To elaborate or emphasize a preceding clause
 
 However, these are rare cases both in training and test sets. To improve performance on such cases, we propose the following steps:
 
-Increasing Training Data size: Identify and incorporate training texts that exhibit similar narrative structures and punctuation usage to the test data. For example, classic literature, or dialog-heavy prose that mimics the stylistic tone of Conan Doyle’s writing.
+- Increasing Training Data size: Identify and incorporate training texts that exhibit similar narrative structures and punctuation usage to the test data. For example, classic literature, or dialog-heavy prose that mimics the stylistic tone of Conan Doyle’s writing.
 
-Transformer-based Architectures: While BiLSTM is effective for capturing short-range dependencies, attention-based architectures like transformers (e.g., BERT, Longformer) can model longer sequences and are likely to capture global context more effectively. This could improve the model’s ability to disambiguate punctuation that depends on broader sentence structure.
+- Transformer-based Architectures: While BiLSTM is effective for capturing short-range dependencies, attention-based architectures like transformers (e.g., BERT, Longformer) can model longer sequences and are likely to capture global context more effectively. This could improve the model’s ability to disambiguate punctuation that depends on broader sentence structure.
 
-Character-level Modeling: Rare punctuation can often be tied to subtle lexical or formatting cues. A character-level model could potentially learn finer-grained patterns — such as stylized names, abbreviations, or typography — that word-level models miss.
+- Character-level Modeling: Rare punctuation can often be tied to subtle lexical or formatting cues. A character-level model could potentially learn finer-grained patterns — such as stylized names, abbreviations, or typography — that word-level models miss.
 
 
 ## Relevant Literature
