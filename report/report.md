@@ -30,38 +30,12 @@ Before model development, we performed an extensive exploratory data analysis to
 - Per-class punctuation frequencies
 - Distributional differences between train, test, and validation sets
 
-### Test Set Statistics
-
-| Metric                 | Value          |
-|------------------------|----------------|
-| Total sequences        | 617            |
-| Avg sequence length    | 48.31          |
-| Max sequence length    | 312            |
-| Median sequence length | 28             |
-| Std deviation          | 2.18           |
-
-### Punctuation Frequencies in Test Set
+### Punctuation Frequencies in Test Set and Test Set Statistics
 
 <p float="left">
   <img src="test/test_eda_punctuation_distribution.png" width="500"/>
   <img src="test/test_eda_sequence_length_distribution.png" width="500"/>
 </p>
-
-\includegraphics[width=0.5\textwidth]{test/test_eda_punctuation_distribution.png}
-\includegraphics[width=0.5\textwidth]{test/test_eda_sequence_length_distribution.png}
-
-| Punctuation | Count |
-|-------------|-------|
-| ,           | 1879  |
-| ;           | 46    |
-| :           | 9     |
-| !           | 62    |
-| ?           | 176   |
-| .           | 1526  |
-| '           | 194   |
-| "           | 1316  |
-| (           | 1     |
-| )           | 1     |
 
 ---
 
