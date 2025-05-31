@@ -47,12 +47,8 @@ Before model development, we performed an extensive exploratory data analysis to
   <img src="test/test_eda_sequence_length_distribution.png" width="500"/>
 </p>
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.45\textwidth]{test/test_eda_punctuation_distribution.png}
-\includegraphics[width=0.45\textwidth]{report/test/test/test_eda_sequence_length_distribution.png}
-\caption{Comparison of predictions}
-\end{figure}
+\includegraphics[width=0.5\textwidth]{test/test_eda_punctuation_distribution.png}
+\includegraphics[width=0.5\textwidth]{test/test_eda_sequence_length_distribution.png}
 
 | Punctuation | Count |
 |-------------|-------|
