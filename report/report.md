@@ -42,6 +42,8 @@ Before model development, we performed an extensive exploratory data analysis to
 
 ### Punctuation Frequencies in Test Set
 
+![Alt text](report/test/test_eda_punctuation_distribution.png)
+
 | Punctuation | Count |
 |-------------|-------|
 | ,           | 1879  |
