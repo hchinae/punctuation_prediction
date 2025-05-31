@@ -49,7 +49,7 @@ Initially, we included various public-domain books (e.g., *Dracula*, *Pride and 
   <img src="train/train_eda_sequence_length_distribution.png" width="500"/>
 </p>
 
-We preprocessed each story by:
+The training data is about three times of testing data which we need to augment it in the future iteration. We preprocessed each story by:
 
 - Removing Gutenberg boilerplate headers and footers
 - Replacing ASCII quotes with UTF-8 equivalents
@@ -70,3 +70,26 @@ Given the sequential nature of the task, we implemented a **BiLSTM** model — a
 - **Linear classifier**: outputs logits over 9 punctuation classes
 
 Input → Embedding → BiLSTM → Dropout → Linear → Softmax
+
+## Data Pipline
+
+During training, a small validation set is randomly selected from the training set. The vocabulary is built only from the training data (excluding validation), as the validation set is intended to mimic the unseen testing data distribution.
+
+To prepare training data, we convert each story into sequences of tokens (words) and their corresponding punctuation labels. Two special tokens are used:
+- <punctuation>: a placeholder for where a punctuation mark was originally present
+- <UNK>: used for out-of-vocabulary tokens during validation and testing
+
+["yesterday", "<punctuation>", "i", "went", "to", "<UNK>", "park", "<punctuation>"]
+Labels: [",", "."]
+
+During training:
+- Vocabulary (token-to-ID mapping) and punctuation label mappings are constructed.
+- A custom collate function is used to pad sequences or truncate them to the maximum allowed length.
+
+During evaluation (and inference), the data pipeline processes .txt files to:
+- Tokenize sentences
+- Detect punctuation positions
+- Replace punctuation with <punctuation> placeholders
+- Generate ground truth labels for comparison with model predictions
+
+This unified pipeline ensures that training and evaluation data are consistently formatted and compatible with the model.
