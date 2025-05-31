@@ -1,12 +1,24 @@
 import json
+import os
+from glob import glob
 
 import torch
 from torch.utils.data import Dataset
 
-from utils.preprocess_data import (get_punctuation_marker,
-                                   get_punctuation_signs_for_prediction,
-                                   preprocess_file)
+from utils.preprocess_data import get_punctuation_marker, preprocess_file
 
+
+def load_samples_from_text_folder(data_folder):
+    all_inputs, all_targets = [], []
+    input_files = glob(os.path.join(data_folder, "*.txt"))
+    print(f"Found {len(input_files)} text files in {data_folder}")
+    for input_file in input_files:
+        inputs, targets = preprocess_file(input_file)
+        all_inputs.extend(inputs)
+        all_targets.extend(targets)
+    samples = list(zip(all_inputs, all_targets))
+    print(f"Loaded {len(samples)} samples from {data_folder}.")
+    return samples
 
 class PunctuationDataset(Dataset):
     def __init__(self, config, val=None):
@@ -24,10 +36,8 @@ class PunctuationDataset(Dataset):
                 with open(config["TRAIN_JSON_PATH"], "r") as f:
                     self.samples = json.load(f)
         elif config["mode"] == "eval":
-            for path in config["TEST_DIR"]:
-                inputs, targets = preprocess_file(path)
-                for x, y in zip(inputs, targets):
-                    self.samples.append((x, y))
+            #for all files in the test directory
+            self.samples = load_samples_from_text_folder(config["TEST_DIR"])
 
     def __len__(self):
         return len(self.samples)

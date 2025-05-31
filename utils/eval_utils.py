@@ -1,8 +1,12 @@
+import warnings
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
+from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
 def evaluate(model, data_loader, device, class_labels=None, plot=False, plot_dir=None):
     model.eval()

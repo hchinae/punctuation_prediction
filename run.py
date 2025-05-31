@@ -2,7 +2,7 @@ import argparse
 
 import yaml
 
-from eval.evaluate import evaluate_model
+from eval import evaluate_model
 from train import train_model
 from utils.seed import set_seed
 

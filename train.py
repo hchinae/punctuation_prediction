@@ -1,15 +1,12 @@
-import json
+
 import random
-from functools import partial
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
 
-from eval.evaluate import evaluate_model
 from model.baseline_bilstm import BiLSTMPunctuator
 from utils.data_utils import prepare_train_val_data
-from utils.dataset import PunctuationDataset, collate_fn
+from utils.eval_utils import evaluate
 from utils.preprocess_data import get_punctuation_signs_for_prediction
 
 class_labels = get_punctuation_signs_for_prediction()
@@ -51,8 +48,8 @@ def train_model(config):
 
     model = BiLSTMPunctuator(
         vocab_size=vocab_size,
-        embedding_dim=128,
-        hidden_dim=256,
+        embedding_dim=config["EMBEDDING_DIM"],
+        hidden_dim=config["HIDDEN_DIM"],
         output_dim=num_classes,
         pad_idx=config["PADDING_IDX"]
     ).to(device)
@@ -85,8 +82,8 @@ def train_model(config):
             total_loss += loss.item()
 
         avg_train_loss = total_loss / len(train_loader)
-        train_macro_f1 = evaluate_model(model, train_loader, device)
-        val_macro_f1  = evaluate_model(model, val_loader, device)
+        train_macro_f1 = evaluate(model, train_loader, device)
+        val_macro_f1  = evaluate(model, val_loader, device)
 
 
         print(f"\nEpoch {epoch:02d} | Train Loss: {avg_train_loss:.4f} | Train macro F1: {train_macro_f1:.4f} | Val macro F1: {val_macro_f1:.4f}")
@@ -96,6 +93,6 @@ def train_model(config):
             best_val_f1 = val_macro_f1
             torch.save(model.state_dict(), config["MODEL_SAVE_PATH"])
             print(f"Saved new best model to {config['MODEL_SAVE_PATH']}")
-            evaluate_model(model, val_loader, device, class_labels=class_labels, plot=True, plot_dir="report")
+            evaluate(model, val_loader, device, class_labels=class_labels, plot=True, plot_dir=f"report/{config['mode']}")
 
     print(f"Training complete. Best validation F1: {best_val_f1:.4f}")

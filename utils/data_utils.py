@@ -1,6 +1,5 @@
 import json
 import os
-import random
 from collections import Counter
 from functools import partial
 from glob import glob
@@ -9,9 +8,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
-from utils.dataset import PunctuationDataset, collate_fn
-from utils.preprocess_data import (get_punctuation_signs_for_prediction,
-                                   preprocess_file)
+from utils.dataset import (PunctuationDataset, collate_fn,
+                           load_samples_from_text_folder)
+from utils.preprocess_data import preprocess_file
 
 
 def load_labels(json_path):
@@ -60,25 +59,16 @@ def build_vocab_from_dir(train_dir, min_freq):
     return vocab
 
 
-def prepare_train_val_data(config):
-    print("Building vocab and processing training data...")
-    vocab = build_vocab_from_dir(config["TRAIN_DIR"], config["MIN_FREQ"])
-
-    # Save vocab
-    with open(config["VOCAB_PATH"], "w") as f:
-        json.dump(vocab, f, indent=2)
-    print(f"Saved vocab with {len(vocab)} tokens to {config['VOCAB_PATH']}")
-
-    # Load and aggregate all input/target pairs
-    all_inputs, all_targets = [], []
-    input_files = glob(os.path.join(config["TRAIN_DIR"], "*.txt"))
-    for input_file in input_files:
-        inputs, targets = preprocess_file(input_file)
-        all_inputs.extend(inputs)
-        all_targets.extend(targets)
 
     samples = list(zip(all_inputs, all_targets))
     print(f"Loaded {len(samples)} samples.")
+    return samples
+
+def prepare_train_val_data(config):
+    print("Processing training data...")
+    # Load and aggregate all input/target pairs
+
+    samples = load_samples_from_text_folder(config["TRAIN_DIR"])
 
     train_samples, val_samples = train_test_split(
         samples, test_size=config["VAL_RATIO"], random_state=config["SEED"]
@@ -99,12 +89,19 @@ def prepare_train_val_data(config):
     with open(config["LABEL2ID_PATH"], "w") as f:
         json.dump(label2id, f)
     np.save(config["CLASS_WEIGHTS_PATH"], weight_array)
-
+    print(f"Saved class weights to {config['CLASS_WEIGHTS_PATH']}")
+    
     with open(config["LABEL2ID_PATH"], "w") as f:
         json.dump(label2id, f)
 
     print(f"Saved label2id to {config['LABEL2ID_PATH']}")
-    print(f"Saved class weights to {config['CLASS_WEIGHTS_PATH']}")
+
+    #after the split, we can build the vocabulary
+    vocab = build_vocab_from_dir(config["TRAIN_DIR"], config["MIN_FREQ"])
+    # Save vocab
+    with open(config["VOCAB_PATH"], "w") as f:
+        json.dump(vocab, f, indent=2)
+    print(f"Saved vocab with {len(vocab)} tokens to {config['VOCAB_PATH']}")
 
     # Create Datasets and Loaders
     train_dataset = PunctuationDataset(config, val=False)

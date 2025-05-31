@@ -1,6 +1,6 @@
-mode: "train"  # "train" or "test"
+mode: "train"  # "train" or "eval"
 
-MAX_SEQ_LEN: 128
+MAX_SEQ_LEN: 350
 MIN_FREQ: 2  # min frequency for vocab
 PADDING_IDX: 0
 UNK_IDX: 1
