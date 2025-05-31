@@ -78,7 +78,7 @@ def evaluate_model(model, inputs, labels):
         # Populate the confusion matrix
         for p, l in zip(prediction, label):
             conf_matrix[classes.index(l), classes.index(p)] += 1
-
+    print(f"Gold labels: {label[:5]}")
     # Compute the generalized F1 score from the confusion matrix
     class_f1_scores = []
     for i, punctuation in enumerate(classes):
