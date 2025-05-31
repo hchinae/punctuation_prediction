@@ -2,7 +2,7 @@ import os
 
 import matplotlib.pyplot as plt
 
-from preprocessing.preprocess_data import preprocess_file
+from utils.preprocess_data import preprocess_file
 
 
 def analyze_sequence_lengths(data_dir):
@@ -35,13 +35,15 @@ def analyze_sequence_lengths(data_dir):
     plt.ylabel("Count")
     plt.title("Distribution of Tokenized Paragraph Lengths")
     plt.tight_layout()
-    #add prefix to the path of the plot based on the current directory
-    #split data_dir to rename / to _
-    prefix = data_dir.split("/")[-1].replace("_", "-")
-    print(f"Saving plot to eda/{prefix}_punctuation_distribution.png")
+    prefix = data_dir.split("/")[-1]
+    file_path = f"report/{prefix}/"
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+    filename = f"{prefix}_eda_sequence_length_distribution.png"
+    print(f"Saving plot to file path {file_path}")
     plt.title(f"Sequence Length in {prefix} Set")
-    plt.savefig(f"eda/{prefix}_sequence_lengths.png")
+    plt.savefig(f"{file_path}/{filename}")
     plt.close()
 
 if __name__ == "__main__":
-    analyze_sequence_lengths("data/proxy_test")
+    analyze_sequence_lengths("data/train")

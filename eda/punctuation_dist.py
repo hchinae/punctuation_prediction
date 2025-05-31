@@ -3,8 +3,8 @@ from collections import Counter
 
 import matplotlib.pyplot as plt
 
-from preprocessing.preprocess_data import (
-    get_punctuation_signs_for_prediction, preprocess_file)
+from utils.preprocess_data import (get_punctuation_signs_for_prediction,
+                                   preprocess_file)
 
 
 def analyze_punctuation_distribution(data_dir):
@@ -36,13 +36,15 @@ def analyze_punctuation_distribution(data_dir):
     plt.ylabel("Frequency")
     plt.title("Punctuation Distribution in Test Set")
     plt.tight_layout()
-    #add prefix to the path of the plot based on the current directory
-    #split data_dir to rename / to _
-    prefix = data_dir.split("/")[-1].replace("_", "-")
-    print(f"Saving plot to eda/{prefix}_punctuation_distribution.png")
+    prefix = data_dir.split("/")[-1]
+    file_path = f"report/{prefix}/"
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+    filename = f"{prefix}_eda_punctuation_distribution.png"
+    print(f"Saving plot to {file_path}")
     plt.title(f"Punctuation Distribution in {prefix} Set")
-    plt.savefig(f"eda/{prefix}_punctuation_distribution.png")
+    plt.savefig(f"{file_path}/{filename}")
     plt.close()
 
 if __name__ == "__main__":
-    analyze_punctuation_distribution("data/proxy_test")
+    analyze_punctuation_distribution("data/train")
