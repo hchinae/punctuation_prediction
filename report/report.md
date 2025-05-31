@@ -57,7 +57,7 @@ Before model development, we performed an extensive exploratory data analysis to
 
 ---
 
-## Data Curation
+## Data pre-processing
 
 Initially, we included various public-domain books (e.g., *Dracula*, *Pride and Prejudice*), but performance degraded slightly, likely due to style mismatches. We ultimately restricted the training data to Sherlock Holmes stories *excluding the test chapters*. 
 
@@ -81,3 +81,4 @@ Given the sequential nature of the task, we implemented a **BiLSTM** model — a
 - **Dropout**: 0.4 for regularization
 - **Linear classifier**: outputs logits over 9 punctuation classes
 
+Input → Embedding → BiLSTM → Dropout → Linear → Softmax
