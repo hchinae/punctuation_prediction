@@ -41,7 +41,13 @@ Before model development, we performed an extensive exploratory data analysis to
 
 ## Data pre-processing
 
-Initially, we included various public-domain books (e.g., *Dracula*, *Pride and Prejudice*), but performance degraded slightly, likely due to style mismatches. We ultimately restricted the training data to Sherlock Holmes stories *excluding the test chapters*. 
+Initially, we included various public-domain books (e.g., *Dracula*, *Pride and Prejudice*), but performance degraded slightly, likely due to style mismatches. We ultimately restricted the training data to Sherlock Holmes stories *excluding the test chapters*. The goal is the training data be similar distribution to test data.
+### Punctuation Frequencies in Train Set and Train Set Statistics
+
+<p float="left">
+  <img src="train/train_eda_punctuation_distribution.png" width="500"/>
+  <img src="train/train_eda_sequence_length_distribution.png" width="500"/>
+</p>
 
 We preprocessed each story by:
 
