@@ -17,6 +17,7 @@ def analyze_sequence_lengths(data_dir):
 
         for sequence in inputs:
             lengths.append(len(sequence))
+        
 
     print(f"Total sequences: {len(lengths)}")
     print(f"Average length: {sum(lengths) / len(lengths):.2f}")
@@ -46,4 +47,4 @@ def analyze_sequence_lengths(data_dir):
     plt.close()
 
 if __name__ == "__main__":
-    analyze_sequence_lengths("data/train")
+    analyze_sequence_lengths("data/test")
