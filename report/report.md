@@ -136,11 +136,11 @@ The model performs well on frequent punctuation marks such as ", ., and ,. Howev
 
 For example, the colon : appears in three distinct contexts in the test set:
 
-In time expressions (e.g., 5:15)
+- In time expressions (e.g., 5:15)
 
-As an introducer of quoted speech (e.g., "The Coroner: Did your father say anything?")
+- As an introducer of quoted speech (e.g., "The Coroner: Did your father say anything?")
 
-To elaborate or emphasize a preceding clause
+- To elaborate or emphasize a preceding clause
 
 However, these are rare cases both in training and test sets. To improve performance on such cases, we propose the following steps:
 
@@ -154,16 +154,16 @@ However, these are rare cases both in training and test sets. To improve perform
 ## Relevant Literature
 A brief survey of the literature shows that deep neural networks have been widely explored for punctuation prediction tasks, often with strong results in domain-specific applications:
 
-Zelasko et al. (2018)
+- Zelasko et al. (2018)
 Punctuation Prediction Model for Conversational Speech
 https://arxiv.org/abs/1807.00543
 This paper explores two deep learning models — a BiLSTM and a CNN — for punctuation restoration in conversational speech, trained on the Fisher corpus. Their approach treats punctuation prediction as a sequence labeling problem.
 
-Xiaoyin Che et al. (2016)
+- Xiaoyin Che et al. (2016)
 Punctuation Prediction for Unsegmented Transcript Based on Word Vector (LREC 2016)
 The authors propose a CNN or DNN model that uses only pre-trained word vectors as input. Their model predicts whether punctuation should follow a particular word in a 5-word sequence, and if so, which punctuation mark. The dataset used was TED Talks from the IWSLT corpus.
 
-Chin Char Juin et al. (2017)
+- Chin Char Juin et al. (2017)
 Punctuation Prediction Using a Bidirectional Recurrent Neural Network with POS Tagging (TENCON 2017)
 This work introduces a BiRNN model enhanced with attention mechanisms and part-of-speech (POS) tags. It handles 11 punctuation classes and is trained on the WikiText corpus.
 
