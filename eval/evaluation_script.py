@@ -102,8 +102,12 @@ if __name__ == '__main__':
     
     # Load the model
     # START : Modify this section
+    import yaml
+
     from eval.model_wrapper import MyModel
-    model = MyModel()
+    with open("../config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    model = MyModel(config)
     # END: do not modify below
     
     # Obtain the model's confusion matrix
