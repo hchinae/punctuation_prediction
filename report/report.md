@@ -96,8 +96,8 @@ All the above-mentioned dimensions were quickly tuned based on performance on th
 ## Data Pipline
 
 Part of the data preprocessing was already provided, where the texts are tokenized and punctuation markers are inserted.
-- <punctuation>: a placeholder for where a punctuation mark was originally present
-- <unk>: used for out-of-vocabulary tokens during validation and testing
+- "<punctuation>": a placeholder for where a punctuation mark was originally present
+- "<unk>": used for out-of-vocabulary tokens during validation and testing
 Example:
 ["yesterday", "<punctuation>", "i", "went", "to", "<UNK>", "park", "<punctuation>"]
 Labels: [",", "."]
@@ -136,7 +136,6 @@ The per class f1 on test set are shown here:
 <img src="eval/per_class_f1.png" width="700"/>
 
 The test set f1 scores are:
-Test Set
 - Macro F1: 40.83%
 - Weighted F1: 81.14%
 
