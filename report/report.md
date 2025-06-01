@@ -98,7 +98,9 @@ All the above-mentioned dimensions were quickly tuned based on performance on th
 Part of the data preprocessing was already provided, where the texts are tokenized and punctuation markers are inserted.
 - `<punctuation>`: a placeholder for where a punctuation mark was originally present
 - `<unk>`: used for out-of-vocabulary tokens during validation and testing
+
 Example:
+
 ["yesterday", "<punctuation>", "i", "went", "to", "<UNK>", "park", "<punctuation>"]
 Labels: [",", "."]
 
