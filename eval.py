@@ -69,7 +69,7 @@ def main():
     # Preprocess evaluation data
     inputs, targets  = [], []    
     from glob import glob
-    eval_files = glob(config["VAL_DIR"] + "*.txt")
+    eval_files = glob(config["TEST_DIR"] + "*.txt")
     for file in eval_files:
         inp, tgt = preprocess_file(file)
         inputs.extend(inp)
@@ -99,8 +99,8 @@ def main():
     with open(config["LABEL2ID_PATH"]) as f:
         label2id = json.load(f)
     class_labels = [id2label[str(i)] for i in sorted(id2label, key=int)]
-    plot_classification_report(report, label2id, "report/val/")
-    plot_confusion_matrix(report, class_labels, "report/val/")
+    plot_classification_report(report, label2id, "report/eval/")
+    #plot_confusion_matrix(report, class_labels, "report/val/")
 
 if __name__ == "__main__":
     main()
