@@ -117,7 +117,7 @@ We evaluate our model on both validation (from train split), and the official te
 
 The per class f1 on test set are shown here:
 
-<img src="test/per_class_f1.png" width="700"/>
+<img src="eval/per_class_f1.png" width="700"/>
 
 The test set f1 scores are:
 Test Set
@@ -130,7 +130,7 @@ These results indicate a solid baseline, but highlight the challenge of rare cla
 
 To investigate the results further, we show the test set confusion matrix here:
 
-<img src="test/confusion_matrix.png" width="600"/>
+<img src="eval/confusion_matrix.png" width="600"/>
 
 The model performs well on frequent punctuation marks such as ", ., and ,. However, performance drops significantly for rare punctuation classes like :, ;, (, and ). Common confusions include ":" and "." as well as ";" and ",".
 
