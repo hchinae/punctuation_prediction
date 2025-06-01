@@ -56,7 +56,7 @@ The training data is about three times of testing data which we need to augment 
 - Removing Gutenberg boilerplate headers and footers
 - Replacing ASCII quotes with UTF-8 equivalents
 - Tokenizing and inserting `<punctuation>` markers in place of real punctuation
-- Building JSON-based datasets containing `[tokens, labels]` pairs
+- Building the vocabulary and label index mappings (to support consistent token-to-ID conversion during training and evaluation)
 
 The preprocessing helped us choose a few parameters and design parts of the task. For instance, after analyzing the training data, we saw that 95% of the sequences were around 512 tokens or less, so we set MAX_SEQ_LEN to 512 to cover most cases without truncating important content. 
 Further, for the validation set, we selected the story from Chapter XII of the Gutenberg Project collection, as it was the only one among the remaining nine chapters that included the underrepresented punctuation marks: "(" and ")".
