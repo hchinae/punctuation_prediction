@@ -1,16 +1,18 @@
-# Punctuation Restoration with BiLSTM: A Baseline for Literary Texts
+# Punctuation Restoration with a BiLSTM Baseline
 
 ## Abstract
 
-In the task of recovering missing punctuation from literary texts, we implemented a baseline model using a deep neural network architecture. Our model consists of a Bidirectional Long Short-Term Memory (BiLSTM) followed by a linear classifier that predicts 9 types of punctuation marks commonly removed from *Sherlock Holmes* stories. 
+In this task, we address restoring missing punctuation in literary texts, focusing on Sherlock Holmes stories as our primary dataset. To establish a strong baseline, we implemented a deep neural model consisting of a Bidirectional Long Short-Term Memory (BiLSTM) network followed by a linear classifier to predict 9 common punctuation marks.
 
-On a randomly selected validation set drawn from the training data, our model achieves a **macro F1 score of 49%** and a **weighted average F1 score of 80%**. On the test set (comprising three unseen Sherlock Holmes stories), the model scores a **macro F1 of 44%** and a **weighted F1 of 75%**. In future work, we plan to train on larger and more diverse text sources, and incorporate richer architectures such as Transformers to better capture long-range dependencies in the text.
+Our model achieves a macro F1 score of 40.83 on the test set. Due to the presence of several underrepresented punctuation classes, these rare labels yield low individual F1 scores, while the more frequent classes (e.g., commas and periods) are predicted with high accuracy. This results in a high weighted F1 score of 81.14%, reflecting the class imbalance in the dataset.
+
+For future work, we plan to expand training to larger and more diverse corpora and explore more expressive architectures, such as Transformers, to better capture long-range dependencies and improve performance across rare punctuation classes.
 
 ---
 
 ## Introduction
 
-The goal of this project is to restore missing punctuation marks from a given input sequence of words using deep learning. The challenge is framed as a sequence labeling problem, where each `<punctuation>` placeholder must be replaced with the correct punctuation mark.
+The goal of this task is to restore missing punctuation marks from a given input sequence of words using deep learning. The challenge is framed as a sequence labeling problem, where each `<punctuation>` placeholder must be replaced with the correct punctuation mark.
 
 The evaluation is performed on three specific stories by Arthur Conan Doyle:
 
