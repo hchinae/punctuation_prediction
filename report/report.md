@@ -1,16 +1,18 @@
-# Punctuation Restoration with BiLSTM: A Baseline for Literary Texts
+# Punctuation Restoration with a BiLSTM Baseline
 
 ## Abstract
 
-In the task of recovering missing punctuation from literary texts, we implemented a baseline model using a deep neural network architecture. Our model consists of a Bidirectional Long Short-Term Memory (BiLSTM) followed by a linear classifier that predicts 9 types of punctuation marks commonly removed from *Sherlock Holmes* stories. 
+In this task, we address restoring missing punctuation in literary texts, focusing on Sherlock Holmes stories as our primary dataset. To establish a strong baseline, we implemented a deep neural model consisting of a Bidirectional Long Short-Term Memory (BiLSTM) network followed by a linear classifier to predict 9 common punctuation marks.
 
-On a randomly selected validation set drawn from the training data, our model achieves a **macro F1 score of 49%** and a **weighted average F1 score of 80%**. On the test set (comprising three unseen Sherlock Holmes stories), the model scores a **macro F1 of 44%** and a **weighted F1 of 75%**. In future work, we plan to train on larger and more diverse text sources, and incorporate richer architectures such as Transformers to better capture long-range dependencies in the text.
+Our model achieves a macro F1 score of 40.83 on the test set. Due to the presence of several underrepresented punctuation classes, these rare labels yield low individual F1 scores, while the more frequent classes (e.g., commas and periods) are predicted with high accuracy. This results in a high weighted F1 score of 81.14%, reflecting the class imbalance in the dataset.
+
+For future work, we plan to expand training to larger and more diverse corpora and explore more expressive architectures, such as Transformers, to better capture long-range dependencies and improve performance across rare punctuation classes.
 
 ---
 
 ## Introduction
 
-The goal of this project is to restore missing punctuation marks from a given input sequence of words using deep learning. The challenge is framed as a sequence labeling problem, where each `<punctuation>` placeholder must be replaced with the correct punctuation mark.
+The goal of this task is to restore missing punctuation marks from a given input sequence of words using deep learning. The challenge is framed as a sequence labeling problem, where each `<punctuation>` placeholder must be replaced with the correct punctuation mark.
 
 The evaluation is performed on three specific stories by Arthur Conan Doyle:
 
@@ -33,8 +35,8 @@ Before model development, we performed an extensive exploratory data analysis to
 ### Punctuation Frequencies in Test Set and Test Set Statistics
 
 <p float="left">
-  <img src="test/test_eda_punctuation_distribution.png" width="500"/>
-  <img src="test/test_eda_sequence_length_distribution.png" width="500"/>
+  <img src="eval/test_eda_punctuation_distribution.png" width="500"/>
+  <img src="eval/test_eda_sequence_length_distribution.png" width="500"/>
 </p>
 
 ---
@@ -56,73 +58,86 @@ The training data is about three times of testing data which we need to augment 
 - Tokenizing and inserting `<punctuation>` markers in place of real punctuation
 - Building JSON-based datasets containing `[tokens, labels]` pairs
 
+The preprocessing helped us choose a few parameters and design parts of the task. For instance, after analyzing the training data, we saw that 95% of the sequences were around 512 tokens or less, so we set MAX_SEQ_LEN to 512 to cover most cases without truncating important content. 
+Further, for the validation set, we selected the story from Chapter XII of the Gutenberg Project collection, as it was the only one among the remaining nine chapters that included the underrepresented punctuation marks: "(" and ")".
+
 ---
 
 ## Model Architecture
 
-Given the sequential nature of the task, we implemented a **BiLSTM** model — a natural fit for capturing context around missing punctuation points.
+Given the sequential nature of the task, we implemented a BiLSTM model — a natural fit for capturing contextual information around missing punctuation marks. Bidirectional LSTMs process input sequences from both left-to-right and right-to-left, allowing the model to learn dependencies from both past and future tokens. This is especially important for punctuation restoration, where cues for a missing symbol may appear before or after the placeholder. Unlike unidirectional models, a BiLSTM can better infer these patterns by attending to the full surrounding context, making it well-suited for sequence labeling tasks like ours.
+
+Input: ["the", "<punctuation>", "dog", "barked", "<punctuation>"]
+
+               ↓↓↓
+       Bidirectional LSTM
+     (reads left → right and right → left)
+
+               ↓↓↓
+     Concatenated hidden states
+
+               ↓↓↓
+         Linear + Softmax
+     (predicts punctuation class)
+
+Output: [",", "."]
 
 ### Components
 
-- **Embedding layer**: maps tokens to 128-dimensional vectors
-- **BiLSTM layer**: hidden size 192, bidirectional
+- **Embedding layer**: maps tokens to 64-dimensional vectors
+- **BiLSTM layer**: hidden size 64, bidirectional
 - **Dropout**: 0.4 for regularization
-- **Linear classifier**: outputs logits over 9 punctuation classes
+- **Linear classifier**: outputs logits over 10 punctuation classes
 
 Input → Embedding → BiLSTM → Dropout → Linear → Softmax
 
+All the above-mentioned dimensions were quickly tuned based on performance on the validation set. Additionally, we applied a weight decay of 1e-5 to further regularize the model parameters and reduce overfitting.
+
 ## Data Pipline
 
-During training, a small validation set is randomly selected from the training set. The vocabulary is built only from the training data (excluding validation), as the validation set is intended to mimic the unseen testing data distribution.
-
-To prepare training data, we convert each story into sequences of tokens (words) and their corresponding punctuation labels. Two special tokens are used:
-- <punctuation>: a placeholder for where a punctuation mark was originally present
-- <UNK>: used for out-of-vocabulary tokens during validation and testing
-
+Part of the data preprocessing was already provided, where the texts are tokenized and punctuation markers are inserted.
+- "<punctuation>": a placeholder for where a punctuation mark was originally present
+- "<unk>": used for out-of-vocabulary tokens during validation and testing
+Example:
 ["yesterday", "<punctuation>", "i", "went", "to", "<UNK>", "park", "<punctuation>"]
 Labels: [",", "."]
 
-During training:
-- Vocabulary (token-to-ID mapping) and punctuation label mappings are constructed.
-- A custom collate function is used to pad sequences or truncate them to the maximum allowed length.
+Before training, the vocabulary and punctuation label mappings are built using only the training data to prevent data leakage. A custom collate function pads or truncates sequences to a fixed maximum length.
 
-During evaluation (and inference), the data pipeline processes .txt files to:
-- Tokenize sentences
-- Detect punctuation positions
-- Replace punctuation with <punctuation> placeholders
-- Generate ground truth labels for comparison with model predictions
-
-This unified pipeline ensures that training and evaluation data are consistently formatted and compatible with the model.
+During evaluation and inference, the same preprocessing pipeline is used: tokenizing the text, replacing punctuation with <punctuation> placeholders, and generating ground truth labels. This ensures consistent formatting between training and evaluation without exposing the model to unseen data during vocab construction.
 
 ## Experiments
-We began our experiments with standard parameters and applied light tuning to improve performance. Adjustments included increasing dropout to reduce overfitting and lowering the hidden layer size.
+We began with standard hyperparameters and applied light tuning to improve performance. This included increasing dropout to reduce overfitting and reducing the hidden layer size to limit model capacity.
 
 Final Hyperparameters:
-- EMBEDDING_DIM: 128
-- HIDDEN_DIM: 192
-- DROPOUT: 0.4
-- BATCH_SIZE: 32
-- EPOCHS: 12
-- LEARNING_RATE: 3e-4
 
-We also implemented:
-- A learning rate scheduler (starting at 3e-4, reducing on plateau)
-- An early stopping mechanism with patience = 3
+- EMBEDDING_DIM: 64
+- HIDDEN_DIM: 64
+- DROPOUT: 0.4
+- MAX_SEQ_LEN: 524
+- BATCH_SIZE: 16
+- EPOCHS: 40
+- LEARNING_RATE: 3e-4
+- WEIGHT_DECAY: 1e-5
+
+To stabilize training and avoid overfitting, we also implemented:
+
+- A learning rate scheduler (starting at 3e-4, reducing when validation F1 plateaus)
+- An early stopping mechanism with patience = 5 based on validation F1
 
 ## Results
 
 We evaluate our model on both validation (from train split), and the official test set. The validation set results are:
-- Macro F1: 49%
-- Weighted F1: 80%
+- Macro F1: 42.50%
+- Weighted F1: 80.79%
 
 The per class f1 on test set are shown here:
 
-<img src="test/per_class_f1.png" width="700"/>
+<img src="eval/per_class_f1.png" width="700"/>
 
 The test set f1 scores are:
-Test Set
-- Macro F1: 44%
-- Weighted F1: 75%
+- Macro F1: 40.83%
+- Weighted F1: 81.14%
 
 These results indicate a solid baseline, but highlight the challenge of rare class prediction in imbalanced literary data.
 
@@ -130,7 +145,7 @@ These results indicate a solid baseline, but highlight the challenge of rare cla
 
 To investigate the results further, we show the test set confusion matrix here:
 
-<img src="test/confusion_matrix.png" width="600"/>
+<img src="eval/confusion_matrix.png" width="600"/>
 
 The model performs well on frequent punctuation marks such as ", ., and ,. However, performance drops significantly for rare punctuation classes like :, ;, (, and ). Common confusions include ":" and "." as well as ";" and ",".
 
@@ -147,9 +162,6 @@ However, these are rare cases both in training and test sets. To improve perform
 - Increasing Training Data size: Identify and incorporate training texts that exhibit similar narrative structures and punctuation usage to the test data. For example, classic literature, or dialog-heavy prose that mimics the stylistic tone of Conan Doyle’s writing.
 
 - Transformer-based Architectures: While BiLSTM is effective for capturing short-range dependencies, attention-based architectures like transformers (e.g., BERT, Longformer) can model longer sequences and are likely to capture global context more effectively. This could improve the model’s ability to disambiguate punctuation that depends on broader sentence structure.
-
-- Character-level Modeling: Rare punctuation can often be tied to subtle lexical or formatting cues. A character-level model could potentially learn finer-grained patterns — such as stylized names, abbreviations, or typography — that word-level models miss.
-
 
 ## Relevant Literature
 A brief survey of the literature shows that deep neural networks have been widely explored for punctuation prediction tasks, often with strong results in domain-specific applications:
