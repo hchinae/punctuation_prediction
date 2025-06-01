@@ -1,4 +1,4 @@
-mode: "train"  # "train" or "eval"
+mode: "train"  # "train"
 
 MAX_SEQ_LEN: 524
 MIN_FREQ: 2  # min frequency for vocab
