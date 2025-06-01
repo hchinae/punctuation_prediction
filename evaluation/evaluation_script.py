@@ -70,10 +70,6 @@ def evaluate_model(model, inputs, labels):
         prediction = model.predict(input)
  
         # Ensure that the predictions are valid
-        print("Input:", input)
-        print("Number of <punctuation> markers:", input.count(get_punctuation_marker()))
-        print("Model returned:", len(prediction))
-        print("Gold label length:", len(label))
         assert len(prediction) == len(label), "Invalid number of predictions"
         for p in prediction:
             assert p in classes, "Model predicted an invalid punctuation sign: {}".format(p)
