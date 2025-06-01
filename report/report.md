@@ -35,8 +35,8 @@ Before model development, we performed an extensive exploratory data analysis to
 ### Punctuation Frequencies in Test Set and Test Set Statistics
 
 <p float="left">
-  <img src="test/test_eda_punctuation_distribution.png" width="500"/>
-  <img src="test/test_eda_sequence_length_distribution.png" width="500"/>
+  <img src="eval/test_eda_punctuation_distribution.png" width="500"/>
+  <img src="eval/test_eda_sequence_length_distribution.png" width="500"/>
 </p>
 
 ---
