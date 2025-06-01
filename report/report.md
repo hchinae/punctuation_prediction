@@ -109,7 +109,7 @@ Before training, the vocabulary and punctuation label mappings are built using o
 During evaluation and inference, the same preprocessing pipeline is used: tokenizing the text, replacing punctuation with <punctuation> placeholders, and generating ground truth labels. This ensures consistent formatting between training and evaluation without exposing the model to unseen data during vocab construction.
 
 ## Experiments
-We began with standard hyperparameters and applied light tuning to improve performance. This included increasing dropout to reduce overfitting and reducing the hidden layer size to limit model capacity.
+We began with standard hyperparameters and applied light tuning to improve performance. This included increasing dropout to reduce overfitting and reducing the hidden layer size to limit model capacity — since the dataset is relatively small and the model was prone to overfitting during early experiments.
 
 Final Hyperparameters:
 
