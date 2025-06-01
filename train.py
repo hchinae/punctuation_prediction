@@ -55,16 +55,6 @@ def evaluate(model, dataloader, loss_fn, device, id2label):
             all_labels.extend(true_labels)
             all_preds.extend(pred_labels)
 
-    # After collecting all_preds and all_labels
-    report = classification_report(
-    all_labels,
-    all_preds,
-    target_names=[id2label[i] for i in sorted(id2label.keys())],
-    digits=4,
-    zero_division=0
-    )
-    print("\nClassification Report:\n")
-    print(report)
 
     # Compute macro F1
     f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)

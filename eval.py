@@ -1,85 +1,85 @@
-import glob
 import json
-import os
 
-import numpy
 import torch
-from sklearn.metrics import classification_report
+import yaml
+from sklearn.metrics import classification_report, f1_score
+from torch.utils.data import DataLoader
 
-from evaluation.model_wrapper import BiLSTMPunctuatorWrapper
-from model.baseline_bilstm import BiLSTMPunctuator
-from utils.data_utils import load_samples_from_text_folder
+from model import PunctuationPredictor
 from utils.dataset import PunctuationDataset, collate_fn
-from utils.eval_utils import (evaluate_model, plot_classification_report,
-                              plot_confusion_matrix)
-from utils.preprocess_data import get_punctuation_signs_for_prediction
-
-#from functools import partial
-
-#from torch.utils.data import DataLoader
+from utils.preprocess_data import preprocess_file
 
 
+def load_config():
+    with open("config.yaml", "r") as f:
+        return yaml.safe_load(f)
 
-def load_vocab(config):
-    with open(config["VOCAB_PATH"], "r") as f:
-        return json.load(f)
+
+@torch.no_grad()
+def evaluate_model(model, dataloader, id2label, device):
+    model.eval()
+    all_preds = []
+    all_labels = []
+
+    for batch in dataloader:
+        input_ids = batch["input_ids"].to(device)
+        target_ids = batch["target_ids"].to(device)
+
+        logits = model(input_ids)
+        preds = torch.argmax(logits, dim=-1)
+
+        mask = target_ids != -100
+        true = target_ids[mask].cpu().tolist()
+        pred = preds[mask].cpu().tolist()
+
+        all_labels.extend(true)
+        all_preds.extend(pred)
+
+    f1 = f1_score(all_labels, all_preds, average="macro", zero_division=0)
+    print(f"\nMacro F1 score: {f1:.4f}")
+
+    print("\nClassification Report:")
+    print(classification_report(
+        all_labels, all_preds,
+        target_names=[id2label[i] for i in sorted(id2label.keys())],
+        digits=4,
+        zero_division=0
+    ))
+
+    return f1
 
 
-def get_eval_paths(test_dir):
-    filepaths = glob.glob(os.path.join(test_dir, "*.txt"))
-    if not filepaths:
-        raise FileNotFoundError(f"No .txt files found in {test_dir}")
-    return filepaths, f"report/{test_dir}"
-
-def evaluate_m(config):
+def main():
+    config = load_config()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    vocab = load_vocab(config)
-    class_labels = get_punctuation_signs_for_prediction()
-    # Load label2id mapping
-    with open(config["LABEL2ID_PATH"], "r") as f:
-        label2id = json.load(f)
-    all_class_indices = sorted(label2id.values())
-    #labels = [label2id[label] for label in class_labels]
-    
-    conf_matrix = numpy.zeros((len(class_labels), len(class_labels)), dtype="int32")
+    # Load vocab and label maps
+    with open(config["VOCAB_PATH"]) as f:
+        vocab = json.load(f)
+    with open(config["ID2LABEL_PATH"]) as f:
+        id2label = json.load(f)
 
-    model = BiLSTMPunctuator(
+    # Preprocess evaluation data
+    inputs, targets = preprocess_file(config["TEST_DIR"] + "sample_eval.txt")
+
+    # Create dataset + dataloader
+    dataset = PunctuationDataset(inputs, targets, vocab, label2id=None, max_len=config["MAX_SEQ_LEN"])
+    dataloader = DataLoader(dataset, batch_size=config["BATCH_SIZE"], collate_fn=collate_fn)
+
+    # Load model
+    model = PunctuationPredictor(
         vocab_size=len(vocab),
-        embedding_dim=config["EMBEDDING_DIM"],
+        embed_dim=config["EMBEDDING_DIM"],
         hidden_dim=config["HIDDEN_DIM"],
-        output_dim=len(class_labels),
-        pad_idx=config["PADDING_IDX"]
-    ).to(device)
+        num_classes=config["NUM_CLASSES"],
+        dropout=config["DROPOUT"],
+        padding_idx=config["PADDING_IDX"]
+    )
     model.load_state_dict(torch.load(config["MODEL_SAVE_PATH"], map_location=device))
-    model.eval()
+    model.to(device)
 
-    #filepaths, plot_dir = get_eval_paths(config["TEST_DIR"])
-    dataset = PunctuationDataset(config)
-    #loader = DataLoader(dataset, batch_size=config["BATCH_SIZE"], collate_fn=partial(collate_fn, vocab=vocab, config=config))
-
-    test_inputs, test_labels = load_samples_from_text_folder(config["TEST_DIR"])
-    #test_dataset = PunctuationDataset(test_inputs, test_labels, vocab, class_labels, config["MAX_SEQ_LEN"])
-        
-    myModelWrpped = BiLSTMPunctuatorWrapper(model, device, vocab, class_labels, config["MAX_SEQ_LEN"])
-    calculated_f1, all_golds, all_preds, conf_matrix  = evaluate_model(myModelWrpped, test_inputs, test_labels)
-
-    # Get classification report (handles missing labels safely)
-    report = classification_report(
-        all_golds,
-        all_preds,
-        labels=all_class_indices,
-        target_names=class_labels,
-        output_dict=True,
-        zero_division=0
-    )
-    print(f"Our calculated F1 for split '{config['TEST_DIR']}': {calculated_f1:.4f}")
-    plot_classification_report(
-        report,
-        label2id,
-        save_dir=config["mode"],        
-    )
-
-    plot_confusion_matrix(all_golds, all_preds, class_labels, save_dir=config["mode"])
+    evaluate_model(model, dataloader, id2label, device)
 
 
+if __name__ == "__main__":
+    main()
