@@ -67,29 +67,20 @@ Further, for the validation set, we selected the story from Chapter XII of the G
 
 Given the sequential nature of the task, we implemented a BiLSTM model — a natural fit for capturing contextual information around missing punctuation marks. Bidirectional LSTMs process input sequences from both left-to-right and right-to-left, allowing the model to learn dependencies from both past and future tokens. This is especially important for punctuation restoration, where cues for a missing symbol may appear before or after the placeholder. Unlike unidirectional models, a BiLSTM can better infer these patterns by attending to the full surrounding context, making it well-suited for sequence labeling tasks like ours.
 
-Input sequence:
-   [ "the", "<punctuation>", "dog", "barked", "<punctuation>" ]
+Input: ["the", "<punctuation>", "dog", "barked", "<punctuation>"]
 
-         ┌────────────┐      ┌────────────┐      ┌────────────┐
-   --->  │ LSTM (fwd) │ ---> │ LSTM (fwd) │ ---> │ LSTM (fwd) │
-         └────────────┘      └────────────┘      └────────────┘
-           ↑                    ↑                    ↑
-         ┌────────────┐      ┌────────────┐      ┌────────────┐
-   <---  │ LSTM (bwd) │ <--- │ LSTM (bwd) │ <--- │ LSTM (bwd) │
-         └────────────┘      └────────────┘      └────────────┘
+               ↓↓↓
+       Bidirectional LSTM
+     (reads left → right and right → left)
 
-   ⬇               ⬇               ⬇
+               ↓↓↓
+     Concatenated hidden states
 
-  [ h0 ]         [ h1 ]         [ h2 ]         ...   (Concatenated BiLSTM hidden states)
+               ↓↓↓
+         Linear + Softmax
+     (predicts punctuation class)
 
-         ⬇               ⬇
-      Linear Layer      Linear Layer
-         ⬇               ⬇
-  Softmax (10 classes)   Softmax (10 classes)
-
-       ⬇                  ⬇
-   Predict ","        Predict "."
-
+Output: [",", "."]
 
 ### Components
 
