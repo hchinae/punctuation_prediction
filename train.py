@@ -77,7 +77,7 @@ def train_model(config, train_dataset, val_dataset, id2label):
     train_loader = DataLoader(train_dataset, batch_size=config["BATCH_SIZE"], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=config["BATCH_SIZE"])
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=float(config["LEARNING_RATE"]))
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(config["LEARNING_RATE"]), weight_decay=float(config.get("WEIGHT_DECAY", 0.0)))
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
