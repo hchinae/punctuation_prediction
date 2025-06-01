@@ -116,7 +116,22 @@ def get_text_from_input_label(input, label):
             
     return " ".join(reconstruction)
 
-    
+def build_vocab(inputs):
+    """
+    Build a vocabulary from the input sentences.
+    The vocabulary is a mapping from words to unique integer IDs.
+    inputs: are in form of a list of sentences, where each sentence is a list of words.
+    ['<punctuation>', 'now', '<punctuation>', 'it', 'is', 'a', 'fact', '<punctuation>', 'gentlemen', '<punctuation>']
+    """
+    vocab = {}
+    special_tokens = ["<pad>", "<unk>", "<punctuation>"]
+    vocab = {tok: idx for idx, tok in enumerate(special_tokens)}
+    for tokens in inputs:
+        for token in tokens:
+            if token not in vocab:
+                vocab[token] = len(vocab)
+    return vocab
+
 def preprocess_file(filename):
 
     # Recover file content
@@ -150,3 +165,52 @@ def preprocess_file(filename):
     """
     
     return inputs, targets
+
+if __name__ == '__main__':   
+
+    # build the vocabulary and save it to a file, as well as the label2id mapping
+    import json
+    import os
+    from glob import glob
+
+    import yaml
+
+    #load config
+    with open(os.path.join(os.path.dirname(__file__), "../config.yaml"), "r") as f:
+        config = yaml.safe_load(f)
+    input_files = glob(os.path.join(config["TRAIN_DIR"], "*.txt"))
+    
+    all_inputs = []
+    all_labels = []
+    for file in input_files:
+        inputs, labels = preprocess_file(file)
+        all_inputs.extend(inputs)
+        all_labels.extend(labels)
+    vocab = build_vocab(all_inputs)
+    with open(config["VOCAB_PATH"], "w") as f:
+        json.dump(vocab, f, indent=4)   
+
+    labels = enumerate(get_punctuation_signs_for_prediction())
+    label2id = {label: idx for idx, label in labels}
+    with open(config["LABEL2ID_PATH"], "w") as f:
+        json.dump(label2id, f, indent=4)
+
+    #also id2label
+    id2label = {idx: label for label, idx in label2id.items()}
+    with open(config["ID2LABEL_PATH"], "w") as f:
+        json.dump(id2label, f, indent=4)
+
+    print(f"Vocabulary and label2id saved to {config['VOCAB_PATH']} and {config['LABEL2ID_PATH']}")
+    print(f"Vocabulary size: {len(vocab)}")
+    print(f"Label2id size: {len(label2id)}")
+
+    text = "Hello, world! This is a test. Let's see how it works."
+    print("Original text:", text)
+    text = pad_punctuation(text)
+    print("Padded text:", text)
+    inputs, targets = get_input_label_from_text(text)
+    print("Inputs:", inputs)
+    print("Targets:", targets)
+    reconstructed_text = get_text_from_input_label(inputs, targets)
+    print("Reconstructed text:", reconstructed_text)
+    assert text == reconstructed_text, "Reconstructed text does not match original text"

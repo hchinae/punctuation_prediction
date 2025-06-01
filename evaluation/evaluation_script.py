@@ -70,15 +70,18 @@ def evaluate_model(model, inputs, labels):
         prediction = model.predict(input)
  
         # Ensure that the predictions are valid
-        assert len(prediction) == len(label), f"Invalid number of predictions  pred: {len(prediction)}, gold: {len(label)} for input: {input}"
-        assert all(isinstance(p, str) for p in prediction), "Model predicted non-string punctuation signs: {}".format(prediction)
+        print("Input:", input)
+        print("Number of <punctuation> markers:", input.count(get_punctuation_marker()))
+        print("Model returned:", len(prediction))
+        print("Gold label length:", len(label))
+        assert len(prediction) == len(label), "Invalid number of predictions"
         for p in prediction:
             assert p in classes, "Model predicted an invalid punctuation sign: {}".format(p)
             
         # Populate the confusion matrix
         for p, l in zip(prediction, label):
             conf_matrix[classes.index(l), classes.index(p)] += 1
-    print(f"Gold labels: {label[:5]}")
+
     # Compute the generalized F1 score from the confusion matrix
     class_f1_scores = []
     for i, punctuation in enumerate(classes):

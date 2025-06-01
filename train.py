@@ -1,98 +1,128 @@
-
-import random
-
-import numpy as np
 import torch
+import torch.nn.functional as F
+from sklearn.metrics import classification_report
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from model.baseline_bilstm import BiLSTMPunctuator
-from utils.data_utils import prepare_train_val_data
-from utils.eval_utils import evaluate
-from utils.preprocess_data import get_punctuation_signs_for_prediction
-
-class_labels = get_punctuation_signs_for_prediction()
-
-def set_seed(seed):
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+from utils.early_stopping import EarlyStopping
 
 
-def compute_masked_loss(logits, targets, mask, loss_fn):
-    B, L, C = logits.shape
-    losses = []
+def train_one_epoch(model, dataloader, optimizer, loss_fn, device):
+    model.train()
+    total_loss = 0
 
-    for i in range(B):
-        sample_logits = logits[i][mask[i]]
-        if sample_logits.shape[0] == 0:
-            continue
-        sample_targets = torch.tensor(targets[i], dtype=torch.long).to(logits.device)
-        loss = loss_fn(sample_logits, sample_targets)
-        losses.append(loss)
+    for batch in tqdm(dataloader, desc="Training"):
+        input_ids = batch["input_ids"].to(device)
+        target_ids = batch["target_ids"].to(device)
 
-    if len(losses) == 0:
-        return torch.tensor(0.0, requires_grad=True).to(logits.device)
-    return torch.stack(losses).mean()
+        optimizer.zero_grad()
+        logits = model(input_ids)
+        loss = loss_fn(logits.view(-1, logits.size(-1)), target_ids.view(-1))
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
 
-def train_model(config):
+    return total_loss / len(dataloader)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
 
-    train_loader, val_loader, vocab = prepare_train_val_data(config)
-    vocab_size = len(vocab)
+import torch
+from sklearn.metrics import f1_score
+from tqdm import tqdm
 
-    vocab_size = len(vocab)
-    num_classes = len(class_labels)
 
-    model = BiLSTMPunctuator(
-        vocab_size=vocab_size,
-        embedding_dim=config["EMBEDDING_DIM"],
-        hidden_dim=config["HIDDEN_DIM"],
-        output_dim=num_classes,
-        pad_idx=config["PADDING_IDX"]
-    ).to(device)
+def evaluate(model, dataloader, loss_fn, device, id2label):
+    model.eval()
+    total_loss = 0
+    all_preds = []
+    all_labels = []
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=float(config["LEARNING_RATE"]))
-    best_val_f1 = 0.0
-    if config["USE_CLASS_WEIGHTS"]:
-        class_weights = np.load(config["CLASS_WEIGHTS_PATH"])
-        class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
-        loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights)
-    else:
-        loss_fn = torch.nn.CrossEntropyLoss()
+    with torch.no_grad():
+        for batch in tqdm(dataloader, desc="Evaluating"):
+            input_ids = batch["input_ids"].to(device)
+            target_ids = batch["target_ids"].to(device)
 
-    for epoch in range(1, config["EPOCHS"] + 1):
-        model.train()
-        total_loss = 0.0
-
-        for input_ids, targets, mask in train_loader:
-            input_ids = input_ids.to(device)
-            mask = mask.to(device)
-
-            logits, _ = model(input_ids)
-            loss = compute_masked_loss(logits, targets, mask, loss_fn)
-
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config["MAX_GRAD_NORM"])
-            optimizer.step()
-
+            logits = model(input_ids)
+            loss = loss_fn(logits.view(-1, logits.size(-1)), target_ids.view(-1))
             total_loss += loss.item()
 
-        avg_train_loss = total_loss / len(train_loader)
-        train_macro_f1 = evaluate(model, train_loader, device)
-        val_macro_f1  = evaluate(model, val_loader, device)
+            predictions = torch.argmax(logits, dim=-1)  # (B, L)
 
+            # Flatten and collect only non-ignored labels
+            mask = target_ids != -100
+            true_labels = target_ids[mask].cpu().tolist()
+            pred_labels = predictions[mask].cpu().tolist()
 
-        print(f"\nEpoch {epoch:02d} | Train Loss: {avg_train_loss:.4f} | Train macro F1: {train_macro_f1:.4f} | Val macro F1: {val_macro_f1:.4f}")
+            all_labels.extend(true_labels)
+            all_preds.extend(pred_labels)
 
+    # After collecting all_preds and all_labels
+    report = classification_report(
+    all_labels,
+    all_preds,
+    target_names=[id2label[i] for i in sorted(id2label.keys())],
+    digits=4,
+    zero_division=0
+    )
+    print("\nClassification Report:\n")
+    print(report)
 
-        if val_macro_f1 > best_val_f1:
-            best_val_f1 = val_macro_f1
+    # Compute macro F1
+    f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
+    return total_loss / len(dataloader), f1
+
+def train_model(config, train_dataset, val_dataset, id2label):
+    from model import PunctuationPredictor
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = PunctuationPredictor(
+        vocab_size=len(train_dataset.vocab),
+        embed_dim=config["EMBEDDING_DIM"],
+        hidden_dim=config["HIDDEN_DIM"],
+        num_classes=config["NUM_CLASSES"],
+        dropout=config["DROPOUT"],
+        padding_idx=config["PADDING_IDX"]
+    ).to(device)
+
+    train_loader = DataLoader(train_dataset, batch_size=config["BATCH_SIZE"], shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=config["BATCH_SIZE"])
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(config["LEARNING_RATE"]))
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="max",
+        factor=config.get("LR_REDUCTION_FACTOR", 0.5),
+        patience=config.get("SCHEDULER_PATIENCE", 2),
+        threshold=config.get("SCHEDULER_THRESHOLD", 1e-4)
+        )
+
+    early_stopper = EarlyStopping(
+        patience=config.get("EARLY_STOPPING_PATIENCE", 5),
+        mode="max",
+        delta=0.001,
+        save_path=config["MODEL_SAVE_PATH"],
+        verbose=True
+    )
+    #best_val_loss = float("inf")
+    best_val_f1 = 0.0
+    for epoch in range(config["EPOCHS"]):
+        print(f"\nEpoch {epoch + 1}/{config['EPOCHS']}")
+        train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, device)
+        val_loss, val_f1 = evaluate(model, val_loader, loss_fn, device, id2label)
+        train_loss, train_f1 = evaluate(model, train_loader, loss_fn, device, id2label)
+        print(f"Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} Train F1: {train_f1} | Val F1: {val_f1:.4f}")
+
+        # Save best model
+        if val_f1 > best_val_f1:
+            best_val_f1 = val_f1
             torch.save(model.state_dict(), config["MODEL_SAVE_PATH"])
-            print(f"Saved new best model to {config['MODEL_SAVE_PATH']}")
-            evaluate(model, val_loader, device, class_labels=class_labels, plot=True, plot_dir=f"report/{config['mode']}")
+            print(f"Saved best model to {config['MODEL_SAVE_PATH']}")
 
-    print(f"Training complete. Best validation F1: {best_val_f1:.4f}")
+        scheduler.step(val_f1)
+        early_stopper.step(val_f1, model)
+
+        if early_stopper.early_stop:
+            break
+    return model

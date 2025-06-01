@@ -23,6 +23,4 @@ def normalize_and_overwrite_all_txt_files(folder: str):
                 f.write(normalized)
             print(f"Normalized and saved: {filename}")
 
-# Example usage
-normalize_and_overwrite_all_txt_files("data/train")
-normalize_and_overwrite_all_txt_files("data/proxy_test")
+

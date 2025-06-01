@@ -47,4 +47,4 @@ def analyze_punctuation_distribution(data_dir):
     plt.close()
 
 if __name__ == "__main__":
-    analyze_punctuation_distribution("data/train")
+    analyze_punctuation_distribution("data/eval")

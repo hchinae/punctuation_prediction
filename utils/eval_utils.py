@@ -2,93 +2,26 @@ import warnings
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-import torch
 from sklearn.exceptions import UndefinedMetricWarning
-from sklearn.metrics import classification_report, confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix
 
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
-def evaluate(model, data_loader, device, class_labels=None, plot=False, plot_dir=None):
-    model.eval()
-    all_logits = []
-    all_targets = []
-    all_masks = []
+import numpy
 
-    with torch.no_grad():
-        for input_ids, targets, mask in data_loader:
-            input_ids = input_ids.to(device)
-            mask = mask.to(device)
-            logits, _ = model(input_ids)
-            all_logits.append(logits.cpu())
-            all_targets.extend(targets)
-            all_masks.append(mask.cpu())
-
-    logits = torch.cat(all_logits)
-    mask = torch.cat(all_masks)
-    targets = all_targets  # already a flat list of lists
-
-    f1 = compute_f1(logits, targets, mask)
-
-    if plot and class_labels:
-        plot_classification_report(logits, targets, mask, class_labels, plot_dir)
-        plot_confusion_matrix(logits, targets, mask, class_labels, plot_dir)
-
-    return f1
+from utils.preprocess_data import get_punctuation_signs_for_prediction
 
 
-def compute_f1(logits, targets, mask):
-    from sklearn.metrics import f1_score
-    preds = []
-    labels = []
-
-    for i in range(logits.shape[0]):
-        sample_logits = logits[i][mask[i]]
-        if sample_logits.shape[0] == 0:
-            continue
-        pred = sample_logits.argmax(dim=-1).tolist()
-        label = targets[i]
-        preds.extend(pred)
-        labels.extend(label)
-
-    if len(labels) == 0:
-        return 0.0
-
-    return f1_score(labels, preds, average="macro")
-
-
-def plot_classification_report(logits, targets, mask, class_labels, save_dir=None):
-    preds = []
-    labels = []
-
-    for i in range(logits.shape[0]):
-        sample_logits = logits[i][mask[i]]
-        if sample_logits.shape[0] == 0:
-            continue
-        pred = sample_logits.argmax(dim=-1).tolist()
-        label = targets[i]
-        preds.extend(pred)
-        labels.extend(label)
+def plot_classification_report(report, class_labels, save_dir=None):
     
     # Prepare full label list (all indices)
     all_class_indices = list(range(len(class_labels)))
-
-    # Get classification report (handles missing labels safely)
-    report = classification_report(
-        labels,
-        preds,
-        labels=all_class_indices,
-        target_names=class_labels,
-        output_dict=True,
-        zero_division=0
-    )
-    
     # Print macro and weighted average F1
     macro_f1 = report["macro avg"]["f1-score"]
     weighted_f1 = report["weighted avg"]["f1-score"]
     print(f"\nMacro Avg F1: {macro_f1:.4f}")
     print(f"Weighted Avg F1: {weighted_f1:.4f}")
-        # Print overall F1
-
+    
     # Build f1_scores with fallback for missing classes
     f1_scores = []
     for cls in class_labels:
@@ -97,10 +30,10 @@ def plot_classification_report(logits, targets, mask, class_labels, save_dir=Non
         else:
             f1_scores.append(0.0)  # Class missing in both preds and labels
 
-    # Detect missing classes for logging
-    missing = set(all_class_indices) - set(labels) - set(preds)
-    if missing:
-        print(f"Warning: These classes were missing in both predictions and labels: {missing}")
+    # # Detect missing classes for logging
+    # missing = set(all_class_indices) - set(labels) - set(preds)
+    # if missing:
+    #     print(f"Warning: These classes were missing in both predictions and labels: {missing}")
 
     # Print per-class F1
     for cls, f1 in zip(class_labels, f1_scores):
@@ -121,19 +54,7 @@ def plot_classification_report(logits, targets, mask, class_labels, save_dir=Non
         plt.show()
 
 
-def plot_confusion_matrix(logits, targets, mask, class_labels, save_dir=None):
-    preds = []
-    labels = []
-
-    for i in range(logits.shape[0]):
-        sample_logits = logits[i][mask[i]]
-        if sample_logits.shape[0] == 0:
-            continue
-        pred = sample_logits.argmax(dim=-1).tolist()
-        label = targets[i]
-        preds.extend(pred)
-        labels.extend(label)
-
+def plot_confusion_matrix(labels, preds, class_labels, save_dir=None):
     cm = confusion_matrix(labels, preds, labels=list(range(len(class_labels))))
     plt.figure(figsize=(8, 6))
     sns.heatmap(cm, annot=True, fmt="d", xticklabels=class_labels, yticklabels=class_labels, cmap="Blues")
@@ -148,3 +69,48 @@ def plot_confusion_matrix(logits, targets, mask, class_labels, save_dir=None):
     else:
         plt.show()
     plt.close()
+
+    
+def evaluate_model(model, inputs, labels):
+
+    # Obtain the model's confusion matrix
+    classes = get_punctuation_signs_for_prediction()
+    conf_matrix = numpy.zeros((len(classes), len(classes)), dtype="int32")
+
+    all_predictions = []
+    all_golds = []
+
+    for input, label in zip(inputs, labels):
+        
+        # Get the model's prediction
+        prediction = model.predict(input)
+ 
+        # Ensure that the predictions are valid
+        assert len(prediction) == len(label), f"Invalid number of predictions  pred: {len(prediction)}, gold: {len(label)} for input: {input}"
+        assert all(isinstance(p, str) for p in prediction), "Model predicted non-string punctuation signs: {}".format(prediction)
+        for p in prediction:
+            assert p in classes, "Model predicted an invalid punctuation sign: {}".format(p)
+
+        # Populate the confusion matrix
+        for p, l in zip(prediction, label):
+            conf_matrix[classes.index(l), classes.index(p)] += 1
+            all_predictions.append(p)
+            all_golds.append(l)
+
+
+    print(f"Gold labels: {label[:5]}")
+    # Compute the generalized F1 score from the confusion matrix
+    class_f1_scores = []
+    for i, punctuation in enumerate(classes):
+        precision = (conf_matrix[i, i] + 1e-6) / (conf_matrix[:, i].sum() + 1e-6)
+        recall = (conf_matrix[i, i] + 1e-6) / (conf_matrix[i, :].sum() + 1e-6)
+        f1 = 2 * (precision * recall) / (precision + recall + 1e-6)
+        
+        class_f1_scores.append(f1)
+
+    f1_score = sum(class_f1_scores) / len(class_f1_scores)
+    return f1_score,  all_golds, all_predictions, conf_matrix
+
+
+
+

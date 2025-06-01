@@ -28,7 +28,7 @@ def analyze_sequence_lengths(data_dir):
     print(f"Standard deviation: {sum((x - (sum(lengths) / len(lengths))) ** 2 for x in lengths) ** 0.5 / len(lengths):.2f}")
     print(f"Length range: {min(lengths)} - {max(lengths)}")
     print(f"Length variance: {sum((x - (sum(lengths) / len(lengths))) ** 2 for x in lengths) / len(lengths):.2f}")
-    print(f"Length percentiles: 25th: {sorted(lengths)[len(lengths) // 4]}, 50th: {sorted(lengths)[len(lengths) // 2]}, 75th: {sorted(lengths)[3 * len(lengths) // 4]}")
+    print(f"Length percentiles: 25th: {sorted(lengths)[len(lengths) // 4]}, 50th: {sorted(lengths)[len(lengths) // 2]}, 75th: {sorted(lengths)[3 * len(lengths) // 4]}, 90th: {sorted(lengths)[int(len(lengths) * 0.9)]}, 95th: {sorted(lengths)[int(len(lengths) * 0.95)]}, 99th: {sorted(lengths)[int(len(lengths) * 0.99)]}")
 
     plt.figure(figsize=(10, 5))
     plt.hist(lengths, bins=30, color='salmon', edgecolor='black')
@@ -47,4 +47,4 @@ def analyze_sequence_lengths(data_dir):
     plt.close()
 
 if __name__ == "__main__":
-    analyze_sequence_lengths("data/test")
+    analyze_sequence_lengths("data/train")
