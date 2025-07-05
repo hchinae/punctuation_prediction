@@ -1,7 +1,43 @@
+import glob
+import json
+import os
+
 import torch
 from torch.utils.data import Dataset
 
+from utils.preprocess_data import preprocess_file
 
+
+def load_vocab(vocab_path):
+    with open(vocab_path, "r") as f:
+        return json.load(f)
+
+def load_label_map(label_path):
+    with open(label_path, "r") as f:
+        return json.load(f)
+    
+def load_data(config):
+    print("Loading vocab and labels...")
+    vocab = load_vocab(config["VOCAB_PATH"])
+    label2id = load_label_map(config["LABEL2ID_PATH"])
+
+    print("Preprocessing training data...")
+    train_files = glob(os.path.join(config["TRAIN_DIR"], "*.txt"))
+    val_files = glob(os.path.join(config["VAL_DIR"], "*.txt"))
+
+    train_inputs, train_targets = [], []
+    for file in train_files:
+        inp, tgt = preprocess_file(file)
+        train_inputs.extend(inp)
+        train_targets.extend(tgt)
+
+    val_inputs, val_targets = [], []
+    for file in val_files:
+        inp, tgt = preprocess_file(file)
+        val_inputs.extend(inp)
+        val_targets.extend(tgt)
+    return train_inputs, train_targets, val_inputs, val_targets, vocab, label2id
+    
 class PunctuationDataset(Dataset):
     def __init__(self, input_sequences, target_labels, vocab, label2id, config):
         self.inputs = input_sequences
