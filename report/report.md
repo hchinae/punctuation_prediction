@@ -56,7 +56,7 @@ The training data is about three times of testing data which we need to augment 
 - Removing Gutenberg boilerplate headers and footers
 - Replacing ASCII quotes with UTF-8 equivalents
 - Tokenizing and inserting `<punctuation>` markers in place of real punctuation
-- Building JSON-based datasets containing `[tokens, labels]` pairs
+- Building the vocabulary and label index mappings (to support consistent token-to-ID conversion during training and evaluation)
 
 The preprocessing helped us choose a few parameters and design parts of the task. For instance, after analyzing the training data, we saw that 95% of the sequences were around 512 tokens or less, so we set MAX_SEQ_LEN to 512 to cover most cases without truncating important content. 
 Further, for the validation set, we selected the story from Chapter XII of the Gutenberg Project collection, as it was the only one among the remaining nine chapters that included the underrepresented punctuation marks: "(" and ")".
@@ -96,9 +96,11 @@ All the above-mentioned dimensions were quickly tuned based on performance on th
 ## Data Pipline
 
 Part of the data preprocessing was already provided, where the texts are tokenized and punctuation markers are inserted.
-- "<punctuation>": a placeholder for where a punctuation mark was originally present
-- "<unk>": used for out-of-vocabulary tokens during validation and testing
+- `<punctuation>`: a placeholder for where a punctuation mark was originally present
+- `<unk>`: used for out-of-vocabulary tokens during validation and testing
+
 Example:
+
 ["yesterday", "<punctuation>", "i", "went", "to", "<UNK>", "park", "<punctuation>"]
 Labels: [",", "."]
 
@@ -107,7 +109,7 @@ Before training, the vocabulary and punctuation label mappings are built using o
 During evaluation and inference, the same preprocessing pipeline is used: tokenizing the text, replacing punctuation with <punctuation> placeholders, and generating ground truth labels. This ensures consistent formatting between training and evaluation without exposing the model to unseen data during vocab construction.
 
 ## Experiments
-We began with standard hyperparameters and applied light tuning to improve performance. This included increasing dropout to reduce overfitting and reducing the hidden layer size to limit model capacity.
+We began with standard hyperparameters and applied light tuning to improve performance. This included increasing dropout to reduce overfitting and reducing the hidden layer size to limit model capacity — since the dataset is relatively small and the model was prone to overfitting during early experiments.
 
 Final Hyperparameters:
 
@@ -157,13 +159,17 @@ For example, the colon : appears in three distinct contexts in the test set:
 
 - To elaborate or emphasize a preceding clause
 
-However, these are rare cases both in training and test sets. To improve performance on such cases, we propose the following steps:
+Due to their low frequency, the model has limited exposure to these cases in training.
+
+## Improving Performance
+
+To address the above mentioned challenges, we propose:
 
 - Increasing Training Data size: Identify and incorporate training texts that exhibit similar narrative structures and punctuation usage to the test data. For example, classic literature, or dialog-heavy prose that mimics the stylistic tone of Conan Doyle’s writing.
 
 - Transformer-based Architectures: While BiLSTM is effective for capturing short-range dependencies, attention-based architectures like transformers (e.g., BERT, Longformer) can model longer sequences and are likely to capture global context more effectively. This could improve the model’s ability to disambiguate punctuation that depends on broader sentence structure.
 
-## Relevant Literature
+## Related Work
 A brief survey of the literature shows that deep neural networks have been widely explored for punctuation prediction tasks, often with strong results in domain-specific applications:
 
 - Zelasko et al. (2018)
@@ -179,4 +185,7 @@ The authors propose a CNN or DNN model that uses only pre-trained word vectors a
 Punctuation Prediction Using a Bidirectional Recurrent Neural Network with POS Tagging (TENCON 2017)
 This work introduces a BiRNN model enhanced with attention mechanisms and part-of-speech (POS) tags. It handles 11 punctuation classes and is trained on the WikiText corpus.
 
-These works highlight that punctuation recovery is a nuanced task requiring both syntactic and semantic understanding — and that neural models can effectively learn such patterns when provided with appropriate data and contextual features.
+These studies support the use of sequence models for punctuation prediction and emphasize the importance of both syntactic cues and semantic context.
+
+## Conclusion
+This project presents a strong baseline for punctuation restoration in literary text using a lightweight BiLSTM model. While the model handles frequent punctuation effectively, it underperforms on rare classes due to data imbalance and limited context modeling. Our findings suggest that adding targeted training data and exploring Transformer-based models are promising next steps toward more robust performance.
