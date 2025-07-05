@@ -48,5 +48,3 @@ def plot_confusion_matrix(labels, preds, class_labels, save_dir=None):
     else:
         plt.show()
     plt.close()
-
-    
