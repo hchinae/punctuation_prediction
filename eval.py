@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from model import PunctuationPredictor
 from utils.dataset import PunctuationDataset, collate_fn
-from utils.eval_utils import plot_classification_report, plot_confusion_matrix
+from utils.eval_utils import plot_classification_report
 from utils.preprocess_data import preprocess_file
 
 
@@ -17,8 +17,9 @@ def load_config():
 
 
 @torch.no_grad()
-def evaluate_model(model, dataloader, id2label, device):
+def evaluate(model, dataloader, id2label, device, loss_fn=None):
     model.eval()
+    total_loss = 0
     all_preds = []
     all_labels = []
 
@@ -27,6 +28,10 @@ def evaluate_model(model, dataloader, id2label, device):
         target_ids = batch["target_ids"].to(device)
 
         logits = model(input_ids)
+        if loss_fn is not None:
+            loss = loss_fn(logits.view(-1, logits.size(-1)), target_ids.view(-1))
+            total_loss += loss.item()
+
         preds = torch.argmax(logits, dim=-1)
 
         mask = target_ids != -100
@@ -53,7 +58,7 @@ def evaluate_model(model, dataloader, id2label, device):
     )
    
 
-    return f1, report
+    return total_loss, f1, report #if loss_fn is not provided it returns 0 for tatal_loss
 
 
 def main():
@@ -94,13 +99,12 @@ def main():
     model.load_state_dict(torch.load(config["MODEL_SAVE_PATH"], map_location=device))
     model.to(device)
 
-    f1, report = evaluate_model(model, dataloader, id2label, device)
+    total_loss, f1, report = evaluate(model, dataloader,  device, id2label, loss_fn=None)
     #load label2id mapping
     with open(config["LABEL2ID_PATH"]) as f:
         label2id = json.load(f)
-    class_labels = [id2label[str(i)] for i in sorted(id2label, key=int)]
+
     plot_classification_report(report, label2id, "report/eval/")
-    #plot_confusion_matrix(report, class_labels, "report/val/")
 
 if __name__ == "__main__":
     main()

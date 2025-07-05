@@ -1,9 +1,8 @@
 import torch
-import torch.nn.functional as F
-from sklearn.metrics import classification_report
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from eval import evaluate
 from utils.early_stopping import EarlyStopping
 
 
@@ -23,42 +22,6 @@ def train_one_epoch(model, dataloader, optimizer, loss_fn, device):
         total_loss += loss.item()
 
     return total_loss / len(dataloader)
-
-
-import torch
-from sklearn.metrics import f1_score
-from tqdm import tqdm
-
-
-def evaluate(model, dataloader, loss_fn, device, id2label):
-    model.eval()
-    total_loss = 0
-    all_preds = []
-    all_labels = []
-
-    with torch.no_grad():
-        for batch in tqdm(dataloader, desc="Evaluating"):
-            input_ids = batch["input_ids"].to(device)
-            target_ids = batch["target_ids"].to(device)
-
-            logits = model(input_ids)
-            loss = loss_fn(logits.view(-1, logits.size(-1)), target_ids.view(-1))
-            total_loss += loss.item()
-
-            predictions = torch.argmax(logits, dim=-1)  # (B, L)
-
-            # Flatten and collect only non-ignored labels
-            mask = target_ids != -100
-            true_labels = target_ids[mask].cpu().tolist()
-            pred_labels = predictions[mask].cpu().tolist()
-
-            all_labels.extend(true_labels)
-            all_preds.extend(pred_labels)
-
-
-    # Compute macro F1
-    f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
-    return total_loss / len(dataloader), f1
 
 def train_model(config, train_dataset, val_dataset, id2label):
     from model import PunctuationPredictor
@@ -100,8 +63,8 @@ def train_model(config, train_dataset, val_dataset, id2label):
     for epoch in range(config["EPOCHS"]):
         print(f"\nEpoch {epoch + 1}/{config['EPOCHS']}")
         train_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, device)
-        val_loss, val_f1 = evaluate(model, val_loader, loss_fn, device, id2label)
-        train_loss, train_f1 = evaluate(model, train_loader, loss_fn, device, id2label)
+        val_loss, val_f1 = evaluate(model, val_loader,  device, id2label, loss_fn)
+        train_loss, train_f1 = evaluate(model, train_loader,  device, id2label, loss_fn)
         print(f"Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f} Train F1: {train_f1} | Val F1: {val_f1:.4f}")
 
         # Save best model
