@@ -167,7 +167,6 @@ def preprocess_file(filename):
     return inputs, targets
 
 if __name__ == '__main__':   
-
     # build the vocabulary and save it to a file, as well as the label2id mapping
     import json
     import os

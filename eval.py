@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from model import PunctuationPredictor
 from utils.dataset import PunctuationDataset, collate_fn
-from utils.eval_utils import plot_classification_report
+from utils.eval_utils import plot_classification_report, plot_confusion_matrix
 from utils.preprocess_data import preprocess_file
 
 
@@ -17,13 +17,18 @@ def load_config():
 
 
 @torch.no_grad()
-def evaluate(model, dataloader, id2label, device, loss_fn=None):
+def evaluate(model, dataloader, device, id2label, loss_fn=None):
     model.eval()
     total_loss = 0
     all_preds = []
     all_labels = []
 
     for batch in dataloader:
+        print(type(batch['input_ids']))
+        print(batch['input_ids'].shape)
+        print(type(batch['target_ids']))
+        print(batch['target_ids'].shape)
+
         input_ids = batch["input_ids"].to(device)
         target_ids = batch["target_ids"].to(device)
 
@@ -56,7 +61,8 @@ def evaluate(model, dataloader, id2label, device, loss_fn=None):
         zero_division=0,
         output_dict=True 
     )
-   
+
+    #plot_confusion_matrix(all_labels, all_preds, id2label, save_dir="report/eval")
 
     return total_loss, f1, report #if loss_fn is not provided it returns 0 for tatal_loss
 
@@ -64,7 +70,7 @@ def evaluate(model, dataloader, id2label, device, loss_fn=None):
 def main():
     config = load_config()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    print(f"Using device: {device}")
     # Load vocab and label maps
     with open(config["VOCAB_PATH"]) as f:
         vocab = json.load(f)
@@ -97,12 +103,11 @@ def main():
         padding_idx=config["PADDING_IDX"]
     )
     model.load_state_dict(torch.load(config["MODEL_SAVE_PATH"], map_location=device))
+    print(type(model))
+    print(model)
     model.to(device)
 
     total_loss, f1, report = evaluate(model, dataloader,  device, id2label, loss_fn=None)
-    #load label2id mapping
-    with open(config["LABEL2ID_PATH"]) as f:
-        label2id = json.load(f)
 
     plot_classification_report(report, label2id, "report/eval/")
 
